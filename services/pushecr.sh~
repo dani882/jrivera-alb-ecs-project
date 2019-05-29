@@ -1,6 +1,0 @@
-#!/bin/bash
-
-echo Login to ECR
-autentication="$(
-eval $(aaws ecr get-login --region us-east-w --no-include-email)
-
