@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  web:
+    build: ./nginx
+    image: myopenresty
+    ports:
+      - 8080:80
+      - 8081:443
+    links: 
+        - myphp
+    restart: always
+
+  myphp:
+      build: ./php
+      image: myphp
+      ports: 
+      - 9000:9000
+     # volumes:
+     # - ./php/src:/usr/local/openresty/nginx/html:ro
+   
