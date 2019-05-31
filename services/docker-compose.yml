@@ -1,21 +1,26 @@
 version: '3'
 
+networks:
+  web-network:
+
 services:
   web:
     build: ./nginx
     image: myopenresty
     ports:
-      - 8080:80
-      - 8081:443
+      - 80:80
+      - 443:443
     links: 
-        - myphp
+        - php-fpm
     restart: always
+    networks:
+      - web-network
 
-  myphp:
+  php-fpm:
       build: ./php
       image: myphp
-      ports: 
-      - 9000:9000
+      networks:
+      - web-network
      # volumes:
      # - ./php/src:/usr/local/openresty/nginx/html:ro
    
