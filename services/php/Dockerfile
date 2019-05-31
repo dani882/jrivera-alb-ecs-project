@@ -1,6 +1,6 @@
 FROM php:7.3-fpm
 
-RUN apt-get update && apt-get install -y imagemagick pkg-config \ 
+RUN apt-get update && apt-get install -y pkg-config \ 
 libmagickwand-dev \
 build-essential \
 libmemcached-dev \

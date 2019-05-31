@@ -1,0 +1,53 @@
+{
+    "requiresCompatibilities": [
+        "EC2"
+    ],
+    "containerDefinitions": [
+        {
+            "essential": true,
+            "image": "448067628045.dkr.ecr.us-east-2.amazonaws.com/myphp:latest",
+            "memory": "1024",
+            "mountPoints": [
+                {
+                    "containerPath": "/var/www/html",
+                    "sourceVolume": "_ServicesNginxSrc"
+                }
+            ],
+            "name": "php-fpm"
+        },
+        {
+            "essential": true,
+            "image": "448067628045.dkr.ecr.us-east-2.amazonaws.com/myopenresty:latest",
+            "memory": "1024",
+            "links": [
+                "php-fpm"
+            ],
+            "mountPoints": [
+                {
+                    "containerPath": "/var/www/html",
+                    "sourceVolume": "_ServicesNginxSrc"
+                }
+            ],
+            "name": "web",
+            "portMappings": [
+                {
+                    "containerPort": 80,
+                    "hostPort": 80
+                },
+                {
+                    "containerPort": 443,
+                    "hostPort": 443
+                }
+            ]
+        }
+    ],
+    "family": "jrivera-project-tf",
+    "volumes": [
+        {
+            "host": {
+                "sourcePath": "./services/nginx/src"
+            },
+            "name": "_ServicesNginxSrc"
+        }
+    ]
+}
