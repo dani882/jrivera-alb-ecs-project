@@ -15,6 +15,5 @@ pecl install memcached-3.1.3 &&\
 pecl install imagick 3.4.4 &&\
 docker-php-ext-enable memcached imagick
 
-COPY src/ /usr/src/myapp/
-WORKDIR /usr/src/myapp
-CMD [ "php", "./index.php" ]
+COPY src/ /usr/src/myapp
+EXPOSE 9000
