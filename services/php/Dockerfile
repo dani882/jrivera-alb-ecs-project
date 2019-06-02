@@ -14,3 +14,5 @@ libmcrypt-dev && \
 pecl install memcached-3.1.3 &&\
 pecl install imagick 3.4.4 &&\
 docker-php-ext-enable memcached imagick
+
+RUN usermod -u 1000 www-data

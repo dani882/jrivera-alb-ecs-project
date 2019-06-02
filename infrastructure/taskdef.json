@@ -6,11 +6,11 @@
         {
             "essential": true,
             "image": "448067628045.dkr.ecr.us-east-2.amazonaws.com/myphp:latest",
-            "memory": "1024",
+            "memory": "256",
             "mountPoints": [
                 {
                     "containerPath": "/var/www/html",
-                    "sourceVolume": "_ServicesNginxSrc"
+                    "sourceVolume": "ServicesNginxSrc"
                 }
             ],
             "name": "php-fpm"
@@ -18,14 +18,14 @@
         {
             "essential": true,
             "image": "448067628045.dkr.ecr.us-east-2.amazonaws.com/myopenresty:latest",
-            "memory": "1024",
+            "memory": "256",
             "links": [
                 "php-fpm"
             ],
             "mountPoints": [
                 {
                     "containerPath": "/var/www/html",
-                    "sourceVolume": "_ServicesNginxSrc"
+                    "sourceVolume": "ServicesNginxSrc"
                 }
             ],
             "name": "web",
@@ -45,9 +45,9 @@
     "volumes": [
         {
             "host": {
-                "sourcePath": "./services/nginx/src"
+                "sourcePath": "/var/www/html"
             },
-            "name": "_ServicesNginxSrc"
+            "name": "ServicesNginxSrc"
         }
     ]
 }

@@ -9,13 +9,17 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 -subj '/CN=dummy-ssl' \
 -keyout /etc/nginx/ssl/nginx.key \
 -out /etc/nginx/ssl/nginx.crt && \
-mkdir -p /var/www/html && chmod -R 755 /var/www/html
+mkdir -p /var/www/html && \
+chmod -R 755 /var/www/html
 
 # Install geoip2 support
 RUN /usr/local/openresty/bin/opm get anjia0532/lua-resty-maxminddb
 
 # Copy settings
+USER www-data
 COPY conf/default.conf /etc/nginx/conf.d/default.conf
+COPY conf/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 COPY ./src/ /var/www/html
 
+USER root
 EXPOSE 80 443
