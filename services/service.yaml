@@ -51,7 +51,7 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       RequiresCompatibilities: EC2
-      Family: !Join ['', [!Ref 'AWS::StackName', -project-td]]
+      Family: !Join ['', [!Ref 'AWS::StackName', -td]]
       ContainerDefinitions:
       # PHP Image
       - Name: "php-fpm"
@@ -76,7 +76,8 @@ Resources:
           
           - ContainerPort: 443
             HostPort: 443
-        Links: "php-fpm"
+        Links: 
+          - "php-fpm"
 
       Volumes:
       - Name: "ServicesNginxSrc"

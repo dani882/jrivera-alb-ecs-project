@@ -12,6 +12,7 @@ Description: >
 
   Last Modified: 22nd September 2016
   Author: Paul Maddox <pmaddox@amazon.com>
+  Modified-by: Jesus Rivera <dani882@gmail.com>
 
 Resources:
   VPC:
@@ -57,7 +58,7 @@ Resources:
   OpenRestyService:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://jrivera-cf-templates.s3.amazonaws.com/services/service.yaml
+      TemplateURL: https://jrivera-cf-templates.s3.amazonaws.com/webservice/service.yaml
       Parameters:
         VPC: !GetAtt VPC.Outputs.VPC
         Cluster: !GetAtt ECS.Outputs.Cluster
@@ -66,13 +67,13 @@ Resources:
         Path: /
         ECSServiceAutoScalingRoleARN: !GetAtt ECS.Outputs.ECSServiceAutoScalingRole
 
-  LifecycleHook:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: https://jrivera-cf-templates.s3.amazonaws.com/infrastructure/lifecyclehook.yaml
-      Parameters:
-        Cluster: !GetAtt ECS.Outputs.Cluster
-        ECSAutoScalingGroupName: !GetAtt ECS.Outputs.ECSAutoScalingGroupName
+  # LifecycleHook:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: https://jrivera-cf-templates.s3.amazonaws.com/infrastructure/lifecyclehook.yaml
+  #     Parameters:
+  #       Cluster: !GetAtt ECS.Outputs.Cluster
+  #       ECSAutoScalingGroupName: !GetAtt ECS.Outputs.ECSAutoScalingGroupName
 
 Outputs:
 
