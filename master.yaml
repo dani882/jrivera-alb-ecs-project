@@ -1,9 +1,8 @@
 Description: >
 
-  This template deploys a VPC, with a pair of public and private subnets spread 
+  This template deploys a VPC, with a pair of public subnets spread 
   across two Availabilty Zones. It deploys an Internet Gateway, with a default 
-  route on the public subnets. It deploys a pair of NAT Gateways (one in each AZ), 
-  and default routes for them in the private subnets.
+  route on the public subnets.
 
   It then deploys a highly available ECS cluster using an AutoScaling Group, with 
   ECS hosts distributed across multiple Availability Zones. 
@@ -50,12 +49,12 @@ Resources:
       Parameters:
         EnvironmentName: !Ref AWS::StackName
         InstanceType: t2.micro
-        ClusterSize: 4
+        ClusterSize: 2
         VPC: !GetAtt VPC.Outputs.VPC
         SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSHostSecurityGroup
-        Subnets: !GetAtt VPC.Outputs.PrivateSubnets
+        Subnets: !GetAtt VPC.Outputs.PublicSubnets
 
-  WebsiteService:
+  OpenRestyService:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://jrivera-cf-templates.s3.amazonaws.com/services/service.yaml
@@ -77,6 +76,6 @@ Resources:
 
 Outputs:
 
-  WebsiteServiceUrl:
-    Description: The URL endpoint for the website service
+  OpenRestyServiceUrl:
+    Description: The URL endpoint for the openresty service
     Value: !Join ["", [!GetAtt ALB.Outputs.LoadBalancerUrl, "/"]]
