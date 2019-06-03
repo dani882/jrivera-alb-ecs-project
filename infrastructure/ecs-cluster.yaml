@@ -38,7 +38,7 @@ Resources:
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: !Ref EnvironmentName
+      ClusterName: !Join ['', [!Ref 'EnvironmentName', -cluster]]
 
   ECSAutoScalingGroup:
     DependsOn: ECSCluster

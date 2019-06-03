@@ -41,46 +41,60 @@ Resources:
       Role: !Ref ServiceRole
       DesiredCount: !Ref DesiredCount
       TaskDefinition: !Ref TaskDefinition
-      LaunchType: EC2
       LoadBalancers:
-        - ContainerName: "web"
+        - ContainerName: web
           ContainerPort: 80
           TargetGroupArn: !Ref TargetGroup
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      RequiresCompatibilities: EC2
       Family: !Join ['', [!Ref 'AWS::StackName', -td]]
       ContainerDefinitions:
       # PHP Image
-      - Name: "php-fpm"
-        Essential: "true"
-        Image: "448067628045.dkr.ecr.us-east-2.amazonaws.com/myphp:latest"
-        Memory: "256"
+      - Name: php-fpm
+        Essential: true
+        Image: 448067628045.dkr.ecr.us-east-2.amazonaws.com/myphp:latest
+        Memory: 256
+        LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-region: !Ref AWS::Region
+
         MountPoints:
-        - ContainerPath: "/var/www/html"
-          SourceVolume: "ServicesNginxSrc"
+        - ContainerPath: /var/www/html
+          SourceVolume: ServicesNginxSrc
 
       # Openresty Image
-      - Name: "web"
-        Essential: "true"
-        Image: "448067628045.dkr.ecr.us-east-2.amazonaws.com/myopenresty:latest"
-        Memory: "256"
+      - Name: web
+        Essential: true
+        Image: 448067628045.dkr.ecr.us-east-2.amazonaws.com/myopenresty:latest
+        Memory: 256
         MountPoints:
-        - ContainerPath: "/var/www/html"
-          SourceVolume: "ServicesNginxSrc"
+        - ContainerPath: /var/www/html
+          SourceVolume: ServicesNginxSrc
         PortMappings:
           - ContainerPort: 80
             HostPort: 80
-          
           - ContainerPort: 443
             HostPort: 443
-        Links: 
-          - "php-fpm"
 
+        LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-region: !Ref AWS::Region
+        Links: 
+          - php-fpm
       Volumes:
-      - Name: "ServicesNginxSrc"
+        - Name: ServicesNginxSrc
+
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: 365
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -229,6 +243,7 @@ Resources:
         - Name: ServiceName
           Value: !GetAtt Service.Name
       Statistic: Maximum
+      # 20 minutes
       Period: "1200"
       EvaluationPeriods: "1"
       Threshold: "40"
