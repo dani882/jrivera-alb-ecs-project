@@ -11,10 +11,10 @@ services:
       - php-fpm
     restart: always
     volumes:
-      - ./services/nginx/src:/var/www/html:ro
+      - ./services/nginx/src:/var/www/html
 
   php-fpm:
       build: ./services/php
       image: 448067628045.dkr.ecr.us-east-2.amazonaws.com/myphp:latest
       volumes:
-      - ./services/nginx/src:/var/www/html:ro
+      - ./services/nginx/src:/var/www/html

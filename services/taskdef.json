@@ -41,12 +41,10 @@
             ]
         }
     ],
-    "family": "jrivera-project-tf",
+    "family": "jrivera-project-td",
     "volumes": [
         {
-            "host": {
-                "sourcePath": "/var/www/html"
-            },
+            "host": {},
             "name": "ServicesNginxSrc"
         }
     ]

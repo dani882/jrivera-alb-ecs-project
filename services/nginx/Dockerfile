@@ -19,7 +19,7 @@ RUN /usr/local/openresty/bin/opm get anjia0532/lua-resty-maxminddb
 USER www-data
 COPY conf/default.conf /etc/nginx/conf.d/default.conf
 COPY conf/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
-COPY ./src/ /var/www/html
+COPY ./src/index.php /var/www/html/
 
 USER root
 EXPOSE 80 443
