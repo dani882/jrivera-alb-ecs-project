@@ -46,9 +46,9 @@ Resources:
     Properties:
       VPCZoneIdentifier: !Ref Subnets
       LaunchConfigurationName: !Ref ECSLaunchConfiguration
-      MinSize: "2"
-      MaxSize: "5"
-      DesiredCapacity: "2"
+      MinSize: 2
+      MaxSize: 5
+      DesiredCapacity: 2
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} ECS host
@@ -74,7 +74,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       ImageId: !Ref ECSAMI
-      InstanceType: !Ref InstanceTypeECSInstanceProfile
+      InstanceType: !Ref InstanceType
       SecurityGroups:
         - !Ref SecurityGroup
       IamInstanceProfile: !Ref ECSInstanceProfile
@@ -126,6 +126,24 @@ Resources:
                 files:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+
+# Spot Fleet mixed scaling
+  SpotFleet: 
+   Type: AWS::EC2::SpotFleet
+   Properties:
+     SpotFleetRequestConfigData:
+      SpotPrice: 0.05
+      TargetCapacity: 1
+
+      
+
+
+
+
+       IamFleetRole: 
+       - !Ref ECSRole
+
+       
 
   # This IAM Role is attached to all of the ECS hosts. It is based on the default role
   # published here:
