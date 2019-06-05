@@ -74,10 +74,11 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       ImageId: !Ref ECSAMI
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref InstanceTypeECSInstanceProfile
       SecurityGroups:
         - !Ref SecurityGroup
       IamInstanceProfile: !Ref ECSInstanceProfile
+      SpotPrice: 0.05
       UserData:
         "Fn::Base64": !Sub |
           #!/bin/bash
@@ -156,7 +157,26 @@ Resources:
         - PolicyName: ecs-service
           PolicyDocument: |
             {
-                "Statement": [{
+                "Statement": [
+                  #Policy for Spot Fleet
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                          "ec2:*"
+                      ],
+                      "Resource": "*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "iam:ListRoles",
+                        "iam:PassRole",
+                        "iam:ListInstanceProfiles"
+                      ],
+                      "Resource": "*"
+                  }               
+                  #End of Policy for Spot Fleet
+                  {
                     "Effect": "Allow",
                     "Action": [
                         "ecs:CreateCluster",
