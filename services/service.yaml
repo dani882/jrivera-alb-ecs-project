@@ -31,6 +31,14 @@ Parameters:
   ECSServiceAutoScalingRoleARN:
     Description: The ECS service auto scaling role ARN
     Type: String
+    
+  #OpenRestyImage:
+  #  Description: The OpenResty URL from ECR
+  #  Type: String
+
+  PHPImage:
+    Description: The PHP URL from ECR
+    Type: String
 
 Resources:
   Service:
@@ -54,7 +62,8 @@ Resources:
       # PHP Image
       - Name: php-fpm
         Essential: true
-        Image: 448067628045.dkr.ecr.us-east-2.amazonaws.com/myphp:latest
+        Image: !Ref PHPImage
+      #  Image: 448067628045.dkr.ecr.us-east-2.amazonaws.com/myphp:latest
         Memory: 256
         LogConfiguration:
             LogDriver: awslogs
@@ -221,9 +230,9 @@ Resources:
         - Name: ServiceName
           Value: !GetAtt Service.Name
       Statistic: Maximum
-      Period: "60"
-      EvaluationPeriods: "1"
-      Threshold: "75"
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 75
       ComparisonOperator: GreaterThanThreshold
       ActionsEnabled: true
       AlarmActions:
@@ -244,9 +253,9 @@ Resources:
           Value: !GetAtt Service.Name
       Statistic: Maximum
       # 20 minutes
-      Period: "1200"
-      EvaluationPeriods: "1"
-      Threshold: "40"
+      Period: 1200
+      EvaluationPeriods: 1
+      Threshold: 40
       ComparisonOperator: LessThanThreshold
       ActionsEnabled: true
       AlarmActions:

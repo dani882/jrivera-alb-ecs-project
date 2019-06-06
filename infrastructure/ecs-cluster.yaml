@@ -1,48 +1,44 @@
 Description: >
-  This template deploys an ECS cluster to the provided VPC and subnets
-  using an Auto Scaling Group
-
+  This template deploys an ECS cluster to the provided VPC and subnets using an
+  Auto Scaling Group
 Parameters:
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names
     Type: String
-
   InstanceType:
     Description: Which instance type should we use to build the ECS cluster?
     Type: String
     Default: t2.micro
-
   ClusterSize:
     Description: How many ECS hosts do you want to initially deploy?
     Type: Number
     Default: 2
-
   VPC:
     Description: Choose which VPC this ECS cluster should be deployed to
-    Type: AWS::EC2::VPC::Id
-
+    Type: 'AWS::EC2::VPC::Id'
   Subnets:
     Description: Choose which subnets this ECS cluster should be deployed to
-    Type: List<AWS::EC2::Subnet::Id>
-
+    Type: 'List<AWS::EC2::Subnet::Id>'
   SecurityGroup:
     Description: Select the Security Group to use for the ECS cluster hosts
-    Type: AWS::EC2::SecurityGroup::Id
-
+    Type: 'AWS::EC2::SecurityGroup::Id'
   ECSAMI:
     Description: ECS-Optimized AMI ID
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
 
 Resources:
   ECSCluster:
-    Type: AWS::ECS::Cluster
+    Type: 'AWS::ECS::Cluster'
     Properties:
-      ClusterName: !Join ['', [!Ref 'EnvironmentName', -cluster]]
-
+      ClusterName: !Join 
+        - ''
+        - - !Ref EnvironmentName
+          - '-cluster'
+  
   ECSAutoScalingGroup:
     DependsOn: ECSCluster
-    Type: AWS::AutoScaling::AutoScalingGroup
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
       VPCZoneIdentifier: !Ref Subnets
       LaunchConfigurationName: !Ref ECSLaunchConfiguration
@@ -51,7 +47,7 @@ Resources:
       DesiredCapacity: 2
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} ECS host
+          Value: !Sub '${EnvironmentName} ECS host'
           PropagateAtLaunch: true
     CreationPolicy:
       ResourceSignal:
@@ -68,9 +64,9 @@ Resources:
           - AlarmNotification
           - ScheduledActions
         WaitOnResourceSignals: true
-
+  
   ECSLaunchConfiguration:
-    Type: AWS::AutoScaling::LaunchConfiguration
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
     Properties:
       AssociatePublicIpAddress: true
       ImageId: !Ref ECSAMI
@@ -79,45 +75,58 @@ Resources:
         - !Ref SecurityGroup
       IamInstanceProfile: !Ref ECSInstanceProfile
       SpotPrice: 0.05
-      UserData:
-        "Fn::Base64": !Sub |
-          #!/bin/bash
-          yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
-          yum install -y https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
-          yum install -y aws-cfn-bootstrap hibagent 
-          /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
-          /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
-          /usr/bin/enable-ec2-spot-hibernation
 
+      UserData:
+        'Fn::Base64': !Sub >
+          #!/bin/bash
+
+          yum install -y
+          https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+
+          yum install -y
+          https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+
+          yum install -y aws-cfn-bootstrap hibagent 
+
+          /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack
+          ${AWS::StackName} --resource ECSLaunchConfiguration
+
+          /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack
+          ${AWS::StackName} --resource ECSAutoScalingGroup
+
+          /usr/bin/enable-ec2-spot-hibernation
     Metadata:
-      AWS::CloudFormation::Init:
+      'AWS::CloudFormation::Init':
         config:
           packages:
             yum:
               collectd: []
-
           commands:
             01_add_instance_to_cluster:
-              command: !Sub echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+              command: !Sub 'echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
             02_enable_cloudwatch_agent:
-              command: !Sub /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${ECSCloudWatchParameter} -s
+              command: !Sub >-
+                /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl
+                -a fetch-config -m ec2 -c ssm:${ECSCloudWatchParameter} -s
           files:
             /etc/cfn/cfn-hup.conf:
-              mode: 000400
+              mode: 256
               owner: root
               group: root
               content: !Sub |
                 [main]
                 stack=${AWS::StackId}
                 region=${AWS::Region}
-
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Sub |
+              content: !Sub >
                 [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.ECSLaunchConfiguration.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
 
+                triggers=post.update
+
+                path=Resources.ECSLaunchConfiguration.Metadata.AWS::CloudFormation::Init
+
+                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack
+                ${AWS::StackName} --resource ECSLaunchConfiguration
           services:
             sysvinit:
               cfn-hup:
@@ -126,38 +135,47 @@ Resources:
                 files:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+  
+  SpotFleet:
+    Type: 'AWS::EC2::SpotFleet'
+    Properties:
+      SpotFleetRequestConfigData:
+        SpotPrice: 0.05
+        TargetCapacity: 5
+        IamFleetRole: !GetAtt SpotFleetRole.Arn
+        LaunchSpecifications:
+          - EbsOptimized: 'false'
+            InstanceType: t2.large
+            WeightedCapacity: 2
+            ImageId: !Ref ECSAMI
+            SecurityGroups:
+              - GroupId: !Ref SecurityGroup
+            Monitoring:
+              Enabled: true
+            IamInstanceProfile:
+              Arn: !GetAtt ECSInstanceProfile.Arn
 
-# Spot Fleet mixed scaling
-  SpotFleet: 
-   Type: AWS::EC2::SpotFleet
-   Properties:
-     SpotFleetRequestConfigData:
-      SpotPrice: 0.05
-      TargetCapacity: 1
-
-      
-
-
-
-
-       IamFleetRole: 
-       - !Ref ECSRole
-
-       
-
-  # This IAM Role is attached to all of the ECS hosts. It is based on the default role
-  # published here:
-  # http://docs.aws.amazon.com/AmazonECS/latest/developerguide/instance_IAM_role.html
-  #
-  # You can add other IAM policy statements here to allow access from your ECS hosts
-  # to other AWS services. Please note that this role will be used by ALL containers
-  # running on the ECS host.
-
+  SpotFleetRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - spotfleet.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole'
+      Path: /
+  
   ECSRole:
-    Type: AWS::IAM::Role
+    Type: 'AWS::IAM::Role'
     Properties:
       Path: /
-      RoleName: !Sub ${EnvironmentName}-ECSRole-${AWS::Region}
+      RoleName: !Sub '${EnvironmentName}-ECSRole-${AWS::Region}'
       AssumeRolePolicyDocument: |
         {
             "Statement": [{
@@ -169,31 +187,15 @@ Resources:
             }]
         }
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
-        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
+        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
+        - >-
+          arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
       Policies:
         - PolicyName: ecs-service
           PolicyDocument: |
             {
                 "Statement": [
-                  #Policy for Spot Fleet
-                    {
-                      "Effect": "Allow",
-                      "Action": [
-                          "ec2:*"
-                      ],
-                      "Resource": "*"
-                  },
-                  {
-                      "Effect": "Allow",
-                      "Action": [
-                        "iam:ListRoles",
-                        "iam:PassRole",
-                        "iam:ListInstanceProfiles"
-                      ],
-                      "Resource": "*"
-                  }               
-                  #End of Policy for Spot Fleet
                   {
                     "Effect": "Allow",
                     "Action": [
@@ -212,22 +214,21 @@ Resources:
                     "Resource": "*"
                 }]
             }
-
   ECSInstanceProfile:
-    Type: AWS::IAM::InstanceProfile
+    Type: 'AWS::IAM::InstanceProfile'
     Properties:
       Path: /
       Roles:
         - !Ref ECSRole
-
+  
   ECSServiceAutoScalingRole:
-    Type: AWS::IAM::Role
+    Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: 2012-10-17
         Statement:
           Action:
-            - "sts:AssumeRole"
+            - 'sts:AssumeRole'
           Effect: Allow
           Principal:
             Service:
@@ -239,18 +240,18 @@ Resources:
             Statement:
               Effect: Allow
               Action:
-                - application-autoscaling:*
-                - cloudwatch:DescribeAlarms
-                - cloudwatch:PutMetricAlarm
-                - ecs:DescribeServices
-                - ecs:UpdateService
-              Resource: "*"
-
+                - 'application-autoscaling:*'
+                - 'cloudwatch:DescribeAlarms'
+                - 'cloudwatch:PutMetricAlarm'
+                - 'ecs:DescribeServices'
+                - 'ecs:UpdateService'
+              Resource: '*'
+  
   ECSCloudWatchParameter:
-    Type: AWS::SSM::Parameter
+    Type: 'AWS::SSM::Parameter'
     Properties:
       Description: ECS
-      Name: !Sub "AmazonCloudWatch-${ECSCluster}-ECS"
+      Name: !Sub 'AmazonCloudWatch-${ECSCluster}-ECS'
       Type: String
       Value: !Sub |
         {
@@ -336,11 +337,9 @@ Outputs:
   Cluster:
     Description: A reference to the ECS cluster
     Value: !Ref ECSCluster
-
   ECSServiceAutoScalingRole:
     Description: A reference to ECS service auto scaling role
     Value: !GetAtt ECSServiceAutoScalingRole.Arn
-
   ECSAutoScalingGroupName:
     Description: A reference to ECS AutoScaling Group Name
     Value: !Ref ECSAutoScalingGroup

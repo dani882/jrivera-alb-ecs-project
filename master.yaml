@@ -14,6 +14,12 @@ Description: >
   Author: Paul Maddox <pmaddox@amazon.com>
   Modified-by: Jesus Rivera <dani882@gmail.com>
 
+Parameters:
+
+  PHPImageURL:
+    Description: The PHP URL from ECR
+    Type: String
+
 Resources:
   VPC:
     Type: AWS::CloudFormation::Stack
@@ -66,6 +72,7 @@ Resources:
         Listener: !GetAtt ALB.Outputs.Listener
         Path: /
         ECSServiceAutoScalingRoleARN: !GetAtt ECS.Outputs.ECSServiceAutoScalingRole
+        PHPImage: !Ref PHPImageURL
 
   LifecycleHook:
     Type: AWS::CloudFormation::Stack
