@@ -35,7 +35,7 @@ Resources:
         - ''
         - - !Ref EnvironmentName
           - '-cluster'
-  
+
   ECSAutoScalingGroup:
     DependsOn: ECSCluster
     Type: 'AWS::AutoScaling::AutoScalingGroup'
@@ -75,7 +75,6 @@ Resources:
         - !Ref SecurityGroup
       IamInstanceProfile: !Ref ECSInstanceProfile
       SpotPrice: 0.05
-
       UserData:
         'Fn::Base64': !Sub >
           #!/bin/bash

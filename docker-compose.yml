@@ -3,7 +3,7 @@ version: '3'
 services:
   web:
     build: ./services/nginx
-    image: 448067628045.dkr.ecr.us-east-2.amazonaws.com/myopenresty:latest
+    image: ${OPENRESTYREPO}
     ports:
       - 80:80
       - 443:443
@@ -15,6 +15,6 @@ services:
 
   php-fpm:
       build: ./services/php
-      image: 448067628045.dkr.ecr.us-east-2.amazonaws.com/myphp:latest
+      image: ${PHPREPO}
       volumes:
       - ./services/nginx/src:/var/www/html

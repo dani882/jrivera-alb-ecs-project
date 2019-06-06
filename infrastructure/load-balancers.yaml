@@ -41,6 +41,37 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref DefaultTargetGroup
 
+
+  # Certificate for HTTPS Load Balancer
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      #DomainName: !Ref DomainName
+      DomainName: jesusrivera.me
+      ValidationMethod: DNS
+
+
+
+
+
+  HTTPSLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Join
+          - ":"
+          - - arn:aws:acm
+            - !Ref AWS::Region
+            - !Ref AWS::AccountId
+            - !Join ["/", ["certificate", !Ref CertificateId ]]
+      SslPolicy: !Ref SslPolicy
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref DefaultTargetGroup
+
   # We define a default target group here, as this is a mandatory Parameters
   # when creating an Application Load Balancer Listener. This is not used, instead
   # a target group is created per-service in each service template (../services/*)

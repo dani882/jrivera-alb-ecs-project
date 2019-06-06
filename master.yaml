@@ -16,9 +16,15 @@ Description: >
 
 Parameters:
 
+  OpenRestyImageURL:
+    Description: The OpenResty URL from ECR
+    Type: String
+    AllowedPattern: ".+"
+
   PHPImageURL:
     Description: The PHP URL from ECR
     Type: String
+    AllowedPattern: ".+"
 
 Resources:
   VPC:
@@ -72,6 +78,7 @@ Resources:
         Listener: !GetAtt ALB.Outputs.Listener
         Path: /
         ECSServiceAutoScalingRoleARN: !GetAtt ECS.Outputs.ECSServiceAutoScalingRole
+        OpenRestyImage: !Ref OpenRestyImageURL
         PHPImage: !Ref PHPImageURL
 
   LifecycleHook:

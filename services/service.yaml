@@ -32,9 +32,9 @@ Parameters:
     Description: The ECS service auto scaling role ARN
     Type: String
     
-  #OpenRestyImage:
-  #  Description: The OpenResty URL from ECR
-  #  Type: String
+  OpenRestyImage:
+    Description: The OpenResty URL from ECR
+    Type: String
 
   PHPImage:
     Description: The PHP URL from ECR
@@ -63,7 +63,6 @@ Resources:
       - Name: php-fpm
         Essential: true
         Image: !Ref PHPImage
-      #  Image: 448067628045.dkr.ecr.us-east-2.amazonaws.com/myphp:latest
         Memory: 256
         LogConfiguration:
             LogDriver: awslogs
@@ -78,7 +77,7 @@ Resources:
       # Openresty Image
       - Name: web
         Essential: true
-        Image: 448067628045.dkr.ecr.us-east-2.amazonaws.com/myopenresty:latest
+        Image: !Ref OpenRestyImage
         Memory: 256
         MountPoints:
         - ContainerPath: /var/www/html
@@ -196,7 +195,7 @@ Resources:
       ScalingTargetId: !Ref ServiceScalableTarget
       StepScalingPolicyConfiguration:
         AdjustmentType: ChangeInCapacity
-        Cooldown: 1800
+        Cooldown: 60
         MetricAggregationType: Average
         StepAdjustments:
           - MetricIntervalLowerBound: 0
@@ -210,7 +209,7 @@ Resources:
       ScalingTargetId: !Ref ServiceScalableTarget
       StepScalingPolicyConfiguration:
         AdjustmentType: ChangeInCapacity
-        Cooldown: 1800
+        Cooldown: 60
         MetricAggregationType: Average
         StepAdjustments:
           - MetricIntervalUpperBound: 0
