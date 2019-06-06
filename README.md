@@ -56,16 +56,16 @@ We need to have aws cli configured, docker and docker-compose installed
 First step we need to do is create Two repositories that are needed for these project
 
 - Go to build/ folder
-- Execute pushecr.sh with bash to create repo and push images
+- Execute ``` bash pushecr.sh ``` to create repo and push images
 - Once script have finished, It will show two URL ECR repo that will be needed to continue with the provisioning process. Copy it to any text editor and continue
 with the other steps
 
 
-
-### Get started and deploy this into my AWS account
+### Get started and deploy this into AWS account
 
 You can launch this CloudFormation stack in your account:
 
- [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=Production&templateURL=https://jrivera-cf-templates.s3.amazonaws.com/master.yaml)
+ [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=trial-project&templateURL=https://jrivera-cf-templates.s3.amazonaws.com/master.yaml)
 
 
+- In the parameter section, paste the url from pushecr script and continue
