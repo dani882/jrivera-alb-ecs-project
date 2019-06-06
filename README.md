@@ -1,4 +1,4 @@
-# Jesus Rivera's Trial project for Incsub using with AWS CloudFormation, Amazon ECS, and an Application Load Balancer
+# Jesus Rivera's Trial project using with AWS CloudFormation, Amazon ECS, and an Application Load Balancer
 
 
 ## Overview
@@ -50,7 +50,7 @@ This set of templates deploys the following network design:
 ## Provisioning infrastructure
 
 ### Tools needed:
-We need to have aws cli configured, docker and docker-compose installed
+We need to have aws-cli configured, docker and docker-compose installed
 
 ### ECR Repository
 First step we need to do is create Two repositories that are needed for these project
@@ -61,9 +61,9 @@ First step we need to do is create Two repositories that are needed for these pr
 with the other steps
 
 
-### Get started and deploy this into AWS account
+### Deploy into AWS account
 
-You can launch this CloudFormation stack in your account:
+Now that ECR Repos are create you can launch this CloudFormation stack in your account to provision the infrastructure:
 
  [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=trial-project&templateURL=https://jrivera-cf-templates.s3.amazonaws.com/master.yaml)
 
