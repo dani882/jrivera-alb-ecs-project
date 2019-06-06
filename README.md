@@ -37,6 +37,16 @@ After the CloudFormation templates have been deployed, the [stack outputs](http:
 
 The ECS instances should also appear in the Managed Instances section of the EC2 console.
 
+### VPC and subnet IP ranges
+
+This set of templates deploys the following network design:
+
+| Item | CIDR Range | Usable IPs | Description |
+| --- | --- | --- | --- |
+| VPC | 10.0.0.0/16 | 65,536 | The whole range used for the VPC and all subnets |
+| Public Subnet | 10.0.0.0/24 | 256 | The public subnet in the first Availability Zone |
+| Public Subnet | 10.0.1.0/24 | 256 | The public subnet in the second Availability Zone |
+
 ## Provisioning infrastructure
 
 ### Tools needed:
@@ -56,27 +66,6 @@ with the other steps
 
 You can launch this CloudFormation stack in your account:
 
-| AWS Region | Short name | | 
-| -- | -- | -- |
-| US East (Ohio) | us-east-2 | [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=Production&templateURL=https://s3.amazonaws.com/ecs-refarch-cloudformation/master.yaml) |
-| US East (N. Virginia) | us-east-1 | [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=Production&templateURL=https://s3.amazonaws.com/ecs-refarch-cloudformation/master.yaml) |
-| US GovCloud | us-gov-west-1 | [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.amazonaws-us-gov.com/cloudformation/home?region=us-gov-west-1#/stacks/new?stackName=Production&templateURL=https://s3.amazonaws.com/ecs-refarch-cloudformation/master.yaml) |
-| US West (Oregon) | us-west-2 | [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=Production&templateURL=https://s3.amazonaws.com/ecs-refarch-cloudformation/master.yaml) |
-| US West (N. California) | us-west-1 | [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-1#/stacks/new?stackName=Production&templateURL=https://s3.amazonaws.com/ecs-refarch-cloudformation/master.yaml) |
-| Canada (Central) | ca-central-1 | [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ca-central-1#/stacks/new?stackName=Production&templateURL=https://s3.amazonaws.com/ecs-refarch-cloudformation/master.yaml) |
-| EU (London) | eu-west-2 | [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-2#/stacks/new?stackName=Production&templateURL=https://s3.amazonaws.com/ecs-refarch-cloudformation/master.yaml) |
-| EU (Ireland) | eu-west-1 | [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/new?stackName=Production&templateURL=https://s3.amazonaws.com/ecs-refarch-cloudformation/master.yaml) |
-| Asia Pacific (Sydney) | ap-southeast-2 | [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-southeast-2#/stacks/new?stackName=Production&templateURL=https://s3.amazonaws.com/ecs-refarch-cloudformation/master.yaml) |
-
-### VPC and subnet IP ranges
-
-This set of templates deploys the following network design:
-
-| Item | CIDR Range | Usable IPs | Description |
-| --- | --- | --- | --- |
-| VPC | 10.0.0.0/16 | 65,536 | The whole range used for the VPC and all subnets |
-| Public Subnet | 10.0.0.0/24 | 256 | The public subnet in the first Availability Zone |
-| Public Subnet | 10.0.1.0/24 | 256 | The public subnet in the second Availability Zone |
-
+ [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=Production&templateURL=https://jrivera-cf-templates.s3.amazonaws.com/master.yaml)
 
 
