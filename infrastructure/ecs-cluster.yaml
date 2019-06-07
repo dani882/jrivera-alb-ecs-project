@@ -38,7 +38,7 @@ Resources:
 
   ECSAutoScalingGroup:
     DependsOn: ECSCluster
-    Type: AWS::AutoScaling::AutoScalingGroup
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
       VPCZoneIdentifier: !Ref Subnets
       LaunchConfigurationName: !Ref ECSLaunchConfiguration
@@ -74,7 +74,7 @@ Resources:
       SecurityGroups:
         - !Ref SecurityGroup
       IamInstanceProfile: !Ref ECSInstanceProfile
-      SpotPrice: 0.05
+      SpotPrice: 0.05 # To launch Spot Instances using spot fleet
       UserData:
         'Fn::Base64': !Sub >
           #!/bin/bash
@@ -134,42 +134,7 @@ Resources:
                 files:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
-  
-  SpotFleet:
-    Type: 'AWS::EC2::SpotFleet'
-    Properties:
-      SpotFleetRequestConfigData:
-        SpotPrice: 0.05
-        TargetCapacity: 5
-        IamFleetRole: !GetAtt SpotFleetRole.Arn
-        LaunchSpecifications:
-          - EbsOptimized: 'false'
-            InstanceType: t2.large
-            WeightedCapacity: 2
-            ImageId: !Ref ECSAMI
-            SecurityGroups:
-              - GroupId: !Ref SecurityGroup
-            Monitoring:
-              Enabled: true
-            IamInstanceProfile:
-              Arn: !GetAtt ECSInstanceProfile.Arn
-
-  SpotFleetRole:
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - spotfleet.amazonaws.com
-        Version: 2012-10-17
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole'
-      Path: /
-  
+    
   ECSRole:
     Type: 'AWS::IAM::Role'
     Properties:

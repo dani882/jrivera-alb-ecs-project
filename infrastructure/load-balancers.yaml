@@ -19,6 +19,23 @@ Parameters:
     Description: Select the Security Group to apply to the Application Load Balancer
     Type: AWS::EC2::SecurityGroup::Id
 
+
+
+
+  # DomainName:
+  #   Type: String
+  #   MinLength: 1
+  #   MaxLength: 253
+  #   AllowedPattern: '^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$'
+  # Hostname:
+  #   Type: String
+  #   MinLength: 1
+  #   MaxLength: 63
+  #   AllowedPattern: '^[A-Za-z0-9-]{0,62}[A-Za-z0-9]$'
+  # SANS:
+  #   Type: CommaDelimitedList
+
+
 Resources:
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -42,35 +59,154 @@ Resources:
           TargetGroupArn: !Ref DefaultTargetGroup
 
 
-  # Certificate for HTTPS Load Balancer
-  Certificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      #DomainName: !Ref DomainName
-      DomainName: jesusrivera.me
-      ValidationMethod: DNS
+
+
+
+  # # Certificate for HTTPS Load Balancer
+  # Certificate:
+  #   Type: AWS::CertificateManager::Certificate
+  #   Properties:
+  #     #DomainName: !Ref DomainName
+  #     DomainValidationOptions:
+  #     - DomainName: {Ref: DomainName}
+  #       ValidationDomain: {Ref: ValidationDomain}
+  #     ValidationMethod: DNS
 
 
 
 
 
-  HTTPSLoadBalancerListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 443
-      Protocol: HTTPS
-      Certificates:
-        - CertificateArn: !Join
-          - ":"
-          - - arn:aws:acm
-            - !Ref AWS::Region
-            - !Ref AWS::AccountId
-            - !Join ["/", ["certificate", !Ref CertificateId ]]
-      SslPolicy: !Ref SslPolicy
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref DefaultTargetGroup
+
+
+
+
+  # # Role to allow lambda function to be executed
+  # LambdaExecutionRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     ManagedPolicyArns:
+  #      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal: {Service: [lambda.amazonaws.com]}
+  #           Action: ['sts:AssumeRole']
+ 
+  # # Define the function
+  # GetDomainValidationOptionsFunction:
+  #   Type: AWS::Lambda::Function
+  #   Properties:
+  #     Handler: index.lambda_handler
+  #     Role: {'Fn::GetAtt': ['LambdaExecutionRole', 'Arn']}
+  #     Runtime: python2.7
+  #     Code:
+  #       ZipFile: !Sub >
+  #         from __future__ import with_statement, print_function
+  #         from botocore.vendored import requests
+  #         from botocore.vendored.requests.adapters import HTTPAdapter
+                        
+  #         import cfnresponse
+  #         import json
+
+  #         RETRIES = 15
+
+  #         # For production it is advised to mirror this file on your own webserver.
+  #         TLD_DAT_URL = 'http://mxr.mozilla.org/mozilla/source/netwerk/dns/src/effective_tld_names.dat?raw=1'
+
+  #         # Attempt to fetch tld file from url
+  #         session = requests.Session()
+  #         session.mount('https://', HTTPAdapter(max_retries=RETRIES))
+  #         resp = session.get(TLD_DAT_URL)
+  #         resp.raise_for_status()
+
+  #         # Read file and strip out comments
+  #         tld_file = resp.text.splitlines()
+  #         tlds = [line.strip() for line in tld_file if not line.startswith("//")]
+
+
+  #         # The python lambda runtime is very barebones which requires the function
+  #         # to have code to perform the lookup instead of using a python module.
+  #         #
+  #         # Borrowed from https://stackoverflow.com/a/1069780/384973
+
+  #         def get_tld(url, tlds):
+  #           url_elements = url.split('.')
+  #           for i in range(-len(url_elements), 0):
+  #             last_i_elements = url_elements[i:]
+
+  #             candidate = ".".join(last_i_elements)
+  #             wildcard_candidate = ".".join(["*"] + last_i_elements[1:])
+  #             exception_candidate = "!" + candidate
+
+  #             # match tlds:
+  #             if (exception_candidate in tlds):
+  #             return ".".join(url_elements[i:])
+  #             if (candidate in tlds or wildcard_candidate in tlds):
+  #             return ".".join(url_elements[i - 1:])
+  #         raise ValueError("Domain not in global list of TLDs")
+
+  #         def lambda_handler(event, context):
+  #           print("event: {}".format(json.dumps(event)))
+  #           sans = event.get('ResourceProperties', {}).get('SANS', [])
+
+  #           validation_options = []
+  #           for san in sans:
+  #             validation_option = {
+  #             "DomainName": san,
+  #             "ValidationDomain": get_tld(san, tlds)
+  #             }
+  #             validation_options.append(validation_option)
+            
+  #           print("options: {}".format(json.dumps(validation_options)))
+  #           responseData = {}
+  #           responseData['payload'] = validation_options
+  #           cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData)              
+
+ 
+
+  # # Custom resource which calls the above function with the SANS list
+  # DomainValidationOptions:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   Properties:
+  #     ServiceToken: {'Fn::GetAtt': 'GetDomainValidationOptionsFunction.Arn'}
+  #     SANS: {Ref: SANS}
+ 
+  #     # ACM Cert
+  # MultiDomainCertificate:
+  #   Type: AWS::CertificateManager::Certificate
+  #   Properties:
+  #     DomainName: {'Fn::Sub': '${Hostname}.${DomainName}'}
+  #     DomainValidationOptions: { "Fn::GetAtt": [ "DomainValidationOptions", "payload" ] }
+  #     SubjectAlternativeNames: {Ref: SANS}
+
+
+
+
+
+
+
+
+  # HTTPSLoadBalancerListener:
+  #   Type: AWS::ElasticLoadBalancingV2::Listener
+  #   Properties:
+  #     LoadBalancerArn: !Ref LoadBalancer
+  #     Port: 443
+  #     Protocol: HTTPS
+  #     Certificates:
+  #       - CertificateArn: !Join
+  #         - ":"
+  #         - - arn:aws:acm
+  #           - !Ref AWS::Region
+  #           - !Ref AWS::AccountId
+  #           - !Join ["/", ["certificate", !Ref CertificateId ]]
+  #     SslPolicy: !Ref SslPolicy
+  #     DefaultActions:
+  #       - Type: forward
+  #         TargetGroupArn: !Ref DefaultTargetGroup
+
+
+
 
   # We define a default target group here, as this is a mandatory Parameters
   # when creating an Application Load Balancer Listener. This is not used, instead
