@@ -54,6 +54,8 @@ Resources:
           ContainerPort: 80
           TargetGroupArn: !Ref TargetGroup
 
+        # Need to add 443 port
+
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -130,6 +132,22 @@ Resources:
       Actions:
         - TargetGroupArn: !Ref TargetGroup
           Type: forward
+
+
+  # HTTPS Listener
+  # HTTPSListenerRule:
+  #   Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  #   Properties:
+  #     ListenerArn: !Ref HTTPSListener
+  #     Priority: 1
+  #     Conditions:
+  #       - Field: path-pattern
+  #         Values:
+  #           - !Ref Path
+  #     Actions:
+  #       - TargetGroupArn: !Ref TargetGroup
+  #         Type: forward
+
 
   # This IAM Role grants the service access to register/unregister with the
   # Application Load Balancer (ALB). It is based on the default documented here:
@@ -222,16 +240,16 @@ Resources:
       AlarmDescription: Alarm if cpu utilization greater than 75% of reserved cpu
       Namespace: AWS/ECS
       MetricName: CPUUtilization
-      Unit: Percent
+      Unit: "Percent"
       Dimensions:
         - Name: ClusterName
           Value: !Ref Cluster
         - Name: ServiceName
           Value: !GetAtt Service.Name
       Statistic: Maximum
-      Period: 60
-      EvaluationPeriods: 1
-      Threshold: 75
+      Period: "60"
+      EvaluationPeriods: "1"
+      Threshold: "75"
       ComparisonOperator: GreaterThanThreshold
       ActionsEnabled: true
       AlarmActions:
@@ -252,9 +270,9 @@ Resources:
           Value: !GetAtt Service.Name
       Statistic: Maximum
       # 20 minutes
-      Period: 1200
-      EvaluationPeriods: 1
-      Threshold: 40
+      Period: "1200"
+      EvaluationPeriods: "1"
+      Threshold: "40"
       ComparisonOperator: LessThanThreshold
       ActionsEnabled: true
       AlarmActions:
