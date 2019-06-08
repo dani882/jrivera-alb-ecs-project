@@ -10,7 +10,7 @@ The application is based on two docker images(openresty and php-fpm) and have be
 
 The repository consists of a set of nested templates that deploy the following:
 
- - A tiered [VPC](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Introduction.html) with public subnets, spanning an AWS region.
+ - A tiered [VPC](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Introduction.html) with two public subnets, spanning an AWS region.
  - A highly available ECS cluster deployed across two [Availability Zones](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) in an [Auto Scaling](https://aws.amazon.com/autoscaling/) group and that are AWS SSM enabled.
  - Two interconnecting services deployed as [ECS services](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_services.html) (openresty and php-fpm). 
  - An [Application Load Balancer (ALB)](https://aws.amazon.com/elasticloadbalancing/applicationloadbalancer/) to the public subnets to handle inbound traffic.
@@ -41,7 +41,7 @@ The ECS instances should also appear in the Managed Instances section of the EC2
 
 This set of templates deploys the following network design:
 
-| Item | CIDR Range | Description |
+| Item | CIDR | Description |
 | --- | --- | --- |
 | VPC | 10.0.0.0/16 | The whole range used for the VPC and all subnets |
 | Public Subnet | 10.0.0.0/24 | The public subnet in the first Availability Zone |
@@ -50,15 +50,14 @@ This set of templates deploys the following network design:
 ## Provisioning infrastructure
 
 ### Tools needed:
-We need to have aws-cli configured, docker and docker-compose installed
+We need to have aws-cli configured, docker and docker-compose installed.
 
 ### ECR Repository
-First step we need to do is create Two repositories that are needed for these project
+First step we need to do is create Two repositories and a SSL Certificate that are needed for these project
 
 - Go to build/ folder
-- Execute ``` bash pushecr.sh ``` to create repo and push images
-- Once script have finished, It will show two URL ECR repo that will be needed to continue with the provisioning process. Copy it to any text editor and continue
-with the other steps
+- Execute ``` bash prepenv.sh ``` to create repo, push docker images and create ssl certificate
+- Once script have finished, It will show two URL ECR repo that will be needed to continue with the provisioning process. Copy it to any text editor and continue with the other steps.
 
 
 ### Deploy into AWS account
@@ -68,4 +67,4 @@ Now that ECR Repos are create you can launch this CloudFormation stack in your a
  [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=trial-project&templateURL=https://jrivera-cf-templates.s3.amazonaws.com/master.yaml)
 
 
-- In the parameter section, paste the url from pushecr script and continue
+- In the parameter section, paste the url from prepenv script and continue.

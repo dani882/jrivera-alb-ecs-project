@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to login, create ecr repo and push docker image
+# Script to create ecr repo, push docker image and upload SSL certificate to IAM
 
 echo "Login to ECR"
 eval $(aws ecr get-login --no-include-email)
@@ -34,4 +34,22 @@ echo ""
 echo "============================================================================================="
 echo "============================================================================================="
 
-rm -rf .env
+# Create a dummy Certificate and upload it to IAM
+echo ""
+echo ""
+echo "============================================================================================="
+echo "Creating SSL Certificate"
+echo "============================================================================================="
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj '/CN=dummy-ssl' -keyout dummy.key -out dummy.crt
+
+echo ""
+echo "============================================================================================="
+echo "Uploading certificate to AWS IAM for ALB Listener"
+echo "============================================================================================="
+aws iam upload-server-certificate --server-certificate-name dummycert\
+ --certificate-body file://dummy.crt --private-key file://dummy.key 1> /dev/null
+ echo ""
+ echo "Certificate successfuly uploaded to AWS IAM"
+
+# Remove files created and dont needed anymore
+ rm -rf .env dummy.key dummy.crt

@@ -1,5 +1,5 @@
 Description: >
-  This is a project to show php information using phpinfo() function
+  A project to show php information using phpinfo() function
 Parameters:
   VPC:
     Description: The VPC that the ECS cluster is deployed to
@@ -53,8 +53,6 @@ Resources:
         - ContainerName: web
           ContainerPort: 80
           TargetGroupArn: !Ref TargetGroup
-
-        # Need to add 443 port
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition

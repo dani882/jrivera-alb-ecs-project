@@ -41,29 +41,25 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref DefaultTargetGroup
 
-
-  # HTTPSLoadBalancerListener:
-  #   Type: AWS::ElasticLoadBalancingV2::Listener
-  #   Properties:
-  #     LoadBalancerArn: !Ref LoadBalancer
-  #     Port: 443
-  #     Protocol: HTTPS
-  #     Certificates:
-  #       - CertificateArn: !Join
-  #         - ":"
-  #         - - arn:aws:iam
-  #           - !Ref AWS::Region
-  #           - !Ref AWS::AccountId
-  #           - !Join ["/", ["server-certificate", "dummycert" ]]
-  #     SslPolicy: !Ref SslPolicy
-  #     DefaultActions:
-  #       - Type: forward
-  #         TargetGroupArn: !Ref DefaultTargetGroup
-
+  # HTTPS Listener 
+  HTTPSLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Join
+          - ":"
+          - - "arn:aws:iam:"
+            - !Ref AWS::AccountId
+            - !Join ["/", ["server-certificate", "dummycert" ]]
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref DefaultTargetGroup
 
   # We define a default target group here, as this is a mandatory Parameters
-  # when creating an Application Load Balancer Listener. This is not used, instead
-  # a target group is created per-service in each service template (../services/*)
+  # when creating an Application Load Balancer Listener.
   DefaultTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
