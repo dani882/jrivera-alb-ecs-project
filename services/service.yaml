@@ -23,6 +23,10 @@ Parameters:
     Description: The Application Load Balancer listener to register with
     Type: String
 
+  HTTPSListener:
+    Description: The Application Load Balancer listener to register with
+    Type: String
+
   Path:
     Description: The path to register with the Application Load Balancer
     Type: String
@@ -41,6 +45,7 @@ Parameters:
     Type: String
 
 Resources:
+  #HTTP Service
   Service:
     Type: AWS::ECS::Service
     DependsOn: ListenerRule
@@ -53,6 +58,20 @@ Resources:
         - ContainerName: web
           ContainerPort: 80
           TargetGroupArn: !Ref TargetGroup
+
+  #HTTPS Service
+  HTTPSService:
+    Type: AWS::ECS::Service
+    DependsOn: HTTPSListenerRule
+    Properties:
+      Cluster: !Ref Cluster
+      Role: !Ref ServiceRole
+      DesiredCount: !Ref DesiredCount
+      TaskDefinition: !Ref TaskDefinition
+      LoadBalancers:
+        - ContainerName: web
+          ContainerPort: 443
+          TargetGroupArn: !Ref HTTPSTargetGroup
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -84,9 +103,9 @@ Resources:
           SourceVolume: ServicesNginxSrc
         PortMappings:
           - ContainerPort: 80
-            HostPort: 80
+            HostPort: 0
           - ContainerPort: 443
-            HostPort: 443
+            HostPort: 0
 
         LogConfiguration:
             LogDriver: awslogs
@@ -118,6 +137,21 @@ Resources:
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
 
+  #HTTPS Target Group
+  HTTPSTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !Ref VPC
+      Port: 443
+      Protocol: HTTPS
+      Matcher:
+        HttpCode: 200-299
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /alb-status
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+
   ListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
@@ -131,21 +165,19 @@ Resources:
         - TargetGroupArn: !Ref TargetGroup
           Type: forward
 
-
-  # HTTPS Listener
-  # HTTPSListenerRule:
-  #   Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  #   Properties:
-  #     ListenerArn: !Ref HTTPSListener
-  #     Priority: 1
-  #     Conditions:
-  #       - Field: path-pattern
-  #         Values:
-  #           - !Ref Path
-  #     Actions:
-  #       - TargetGroupArn: !Ref TargetGroup
-  #         Type: forward
-
+  # HTTPS Listener Rule
+  HTTPSListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HTTPSListener
+      Priority: 1
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - !Ref Path
+      Actions:
+        - TargetGroupArn: !Ref HTTPSTargetGroup
+          Type: forward
 
   # This IAM Role grants the service access to register/unregister with the
   # Application Load Balancer (ALB). It is based on the default documented here:
@@ -203,12 +235,42 @@ Resources:
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
 
+  #HTTPS Service Scalable Target
+  HTTPSServiceScalableTarget:
+    Type: "AWS::ApplicationAutoScaling::ScalableTarget"
+    Properties:
+      MaxCapacity: !Ref MaxCount
+      MinCapacity: !Ref DesiredCount
+      ResourceId: !Join
+        - /
+        - - service
+          - !Ref Cluster
+          - !GetAtt HTTPSService.Name
+      RoleARN: !Ref ECSServiceAutoScalingRoleARN
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
   ServiceScaleOutPolicy:
     Type: "AWS::ApplicationAutoScaling::ScalingPolicy"
     Properties:
       PolicyName: ServiceScaleOutPolicy
       PolicyType: StepScaling
       ScalingTargetId: !Ref ServiceScalableTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+          - MetricIntervalLowerBound: 0
+            ScalingAdjustment: 1
+
+  #HTTPS Service ScaleOut Policy
+  HTTPSServiceScaleOutPolicy:
+    Type: "AWS::ApplicationAutoScaling::ScalingPolicy"
+    Properties:
+      PolicyName: HTTPSServiceScaleOutPolicy
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref HTTPSServiceScalableTarget
       StepScalingPolicyConfiguration:
         AdjustmentType: ChangeInCapacity
         Cooldown: 60
@@ -231,6 +293,21 @@ Resources:
           - MetricIntervalUpperBound: 0
             ScalingAdjustment: -1
 
+  #HTTPS Service ScaleIn Policy
+  HTTPSServiceScaleInPolicy:
+    Type: "AWS::ApplicationAutoScaling::ScalingPolicy"
+    Properties:
+      PolicyName: HTTPSServiceScaleInPolicy
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref HTTPSServiceScalableTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+          - MetricIntervalUpperBound: 0
+            ScalingAdjustment: -1
+
   CPUScaleOutAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -238,12 +315,14 @@ Resources:
       AlarmDescription: Alarm if cpu utilization greater than 75% of reserved cpu
       Namespace: AWS/ECS
       MetricName: CPUUtilization
-      Unit: "Percent"
+      Unit: Percent
       Dimensions:
         - Name: ClusterName
           Value: !Ref Cluster
         - Name: ServiceName
           Value: !GetAtt Service.Name
+        - Name: HTTPSServiceName
+          Value: !GetAtt HTTPSService.Name
       Statistic: Maximum
       Period: "60"
       EvaluationPeriods: "1"
@@ -252,6 +331,7 @@ Resources:
       ActionsEnabled: true
       AlarmActions:
         - !Ref ServiceScaleOutPolicy
+        - !Ref HTTPSServiceScaleOutPolicy
 
   CPUScaleInAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -266,6 +346,8 @@ Resources:
           Value: !Ref Cluster
         - Name: ServiceName
           Value: !GetAtt Service.Name
+        - Name: HTTPSServiceName
+          Value: !GetAtt HTTPSService.Name
       Statistic: Maximum
       # 20 minutes
       Period: "1200"
@@ -275,3 +357,4 @@ Resources:
       ActionsEnabled: true
       AlarmActions:
         - !Ref ServiceScaleInPolicy
+        - !Ref HTTPSServiceScaleInPolicy

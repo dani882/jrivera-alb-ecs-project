@@ -1,6 +1,5 @@
 Description: >
   This template deploys an Application Load Balancer that exposes our various ECS services.
-  We create them in a seperate nested template, so it can be referenced by all of the other nested templates.
 
 Parameters:
   EnvironmentName:
@@ -81,6 +80,6 @@ Outputs:
     Description: A reference to a port 80 listener
     Value: !Ref LoadBalancerListener
 
-  # HTTPSListener:
-  #   Description: A reference to a port 443 listener
-  #   Value: !Ref HTTPSLoadBalancerListener
+  HTTPSListener:
+    Description: A reference to a port 443 listener
+    Value: !Ref HTTPSLoadBalancerListener

@@ -51,5 +51,5 @@ aws iam upload-server-certificate --server-certificate-name dummycert\
  echo ""
  echo "Certificate successfuly uploaded to AWS IAM"
 
-# Remove files created and dont needed anymore
+# Remove files created and not needed anymore
  rm -rf .env dummy.key dummy.crt

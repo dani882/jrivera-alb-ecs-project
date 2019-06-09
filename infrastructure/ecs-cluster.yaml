@@ -67,7 +67,7 @@ Resources:
       AssociatePublicIpAddress: true
       ImageId: !Ref ECSAMI
       InstanceType: !Ref InstanceType
-      SpotPrice: 0.05 # To launch Spot Instances using spot fleet
+      SpotPrice: 0.0832 # To launch Spot Instances using spot fleet feature
       SecurityGroups:
         - !Ref SecurityGroup
       IamInstanceProfile: !Ref ECSInstanceProfile

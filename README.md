@@ -8,6 +8,9 @@ A basic PHP Application that display php information using phpversion() method.
 
 The application is based on two docker images(openresty and php-fpm) and have been modified using Dockerfile and docker-compose to be linked each other.
 
+The application is running in a ECS cluster that needs a minimum of two instances at all times (in separate Availability
+zones for redundancy) and a maximum of 5 scaling up automatically the number of instances in case thecpu usage is higher than 75% for more than 1 minute and scale down if the cpu usage drops below 40% for more than 20 minutes.
+
 The repository consists of a set of nested templates that deploy the following:
 
  - A tiered [VPC](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Introduction.html) with two public subnets, spanning an AWS region.

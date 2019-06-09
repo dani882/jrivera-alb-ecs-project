@@ -1,7 +1,5 @@
 Description: >
   This template contains the security groups required by our entire stack.
-  We create them in a seperate nested template, so they can be referenced
-  by all of the other nested templates.
 
 Parameters:
   EnvironmentName:
@@ -23,7 +21,10 @@ Resources:
       SecurityGroupIngress:
         # Only allow inbound access to ECS from the ELB
         - SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
-          IpProtocol: -1
+          IpProtocol: TCP
+          FromPort: 32768
+          ToPort: 65535
+
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-ECS-Hosts
@@ -37,14 +38,9 @@ Resources:
       SecurityGroupIngress:
         # Allow http access to our ECS services
         - CidrIp: 0.0.0.0/0
-          IpProtocol: TCP
-          FromPort: 80
-          ToPort: 80
-        # Allow https access to our ECS services
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: TCP
-          FromPort: 443
-          ToPort: 443
+          IpProtocol: -1
+       #   FromPort: 80
+       #   ToPort: 80
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-LoadBalancers

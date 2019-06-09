@@ -15,7 +15,6 @@ Description: >
   Modified-by: Jesus Rivera <dani882@gmail.com>
 
 Parameters:
-
   OpenRestyImageURL:
     Description: The OpenResty URL from ECR
     Type: String
@@ -75,6 +74,8 @@ Resources:
         Cluster: !GetAtt ECS.Outputs.Cluster
         DesiredCount: 2
         Listener: !GetAtt ALB.Outputs.Listener
+        HTTPSListener: !GetAtt ALB.Outputs.HTTPSListener
+
         Path: /
         ECSServiceAutoScalingRoleARN: !GetAtt ECS.Outputs.ECSServiceAutoScalingRole
         OpenRestyImage: !Ref OpenRestyImageURL
@@ -89,7 +90,6 @@ Resources:
         ECSAutoScalingGroupName: !GetAtt ECS.Outputs.ECSAutoScalingGroupName
 
 Outputs:
-
   OpenRestyServiceUrl:
     Description: The URL endpoint for the openresty service
     Value: !Join ["", [!GetAtt ALB.Outputs.LoadBalancerUrl, "/"]]
