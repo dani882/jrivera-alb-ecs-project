@@ -52,10 +52,10 @@ This set of templates deploys the following network design:
 
 ## Provisioning infrastructure
 
-### Tools needed:
-We need to have aws-cli configured, docker and docker-compose installed.
+### Pre-requisites:
+We need to run this template in us-east-2(Ohio), have aws-cli configured, docker and docker-compose installed.
 
-### ECR Repository
+### ECR Repository and Certificate
 First step we need to do is create Two repositories and a SSL Certificate that are needed for these project
 
 - Go to build/ folder
