@@ -1,6 +1,6 @@
+    
 Description: >
   This template contains the security groups required by our entire stack.
-
 Parameters:
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names

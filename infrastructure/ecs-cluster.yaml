@@ -102,14 +102,12 @@ Resources:
                 [main]
                 stack=${AWS::StackId}
                 region=${AWS::Region}
-
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
               content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.ECSLaunchConfiguration.Metadata.AWS::CloudFormation::Init
                 action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
-
           services:
             sysvinit:
               cfn-hup:
@@ -288,7 +286,6 @@ Resources:
             }
           }
         }
-
 Outputs:
   Cluster:
     Description: A reference to the ECS cluster
