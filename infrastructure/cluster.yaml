@@ -251,7 +251,20 @@ Resources:
         FromPort: !Ref SecurityIngressFromPort
         ToPort: !Ref SecurityIngressToPort
         CidrIp: !Ref SecurityIngressCidrIp
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   EcsInstanceLc:
     Type: AWS::AutoScaling::LaunchConfiguration
     Condition: CreateWithASG
@@ -270,6 +283,7 @@ Resources:
       UserData:
         Fn::Base64: !Ref UserData
 
+
   EcsInstanceAsg:
     Type: AWS::AutoScaling::AutoScalingGroup
     Condition: CreateWithASG
@@ -284,7 +298,7 @@ Resources:
             - [ !Sub "${PubSubnetAz1}, ${PubSubnetAz2}" ]
           - [ !Sub "${PubSubnetAz1}" ]
         - !Ref SubnetIds
-      LaunchConfigurationName: !Ref EcsInstanceLc
+      LaunchConfigurationName: !Ref IamSpotFleetRoleArn
       MinSize: '0'
       MaxSize: !Ref AsgMaxSize
       DesiredCapacity: !Ref AsgMaxSize
@@ -297,6 +311,12 @@ Resources:
           Key: Description
           Value: "This instance is the part of the Auto Scaling group which was created through ECS Console"
           PropagateAtLaunch: 'true'
+
+
+
+
+
+
   EcsSpotFleet:
     Condition: CreateWithSpot
     Type: AWS::EC2::SpotFleet
@@ -335,6 +355,10 @@ Resources:
                        VolumeType: !Ref EbsVolumeType
               UserData:
                     Fn::Base64: !Ref UserData
+
+
+
+
 Outputs:
   EcsInstanceAsgName:
     Condition: CreateWithASG

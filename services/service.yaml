@@ -191,7 +191,7 @@ Resources:
         {
             "Statement": [{
                 "Effect": "Allow",
-                "Principal": { "Service": [ "ecs.amazonaws.com" ]},
+                "Principal": { "Service": [ "ecs.amazonaws.com","application-autoscaling.amazonaws.com" ]},
                 "Action": [ "sts:AssumeRole" ]
             }]
         }
@@ -214,7 +214,9 @@ Resources:
                         "elasticloadbalancing:DeregisterTargets",
                         "elasticloadbalancing:DescribeTargetGroups",
                         "elasticloadbalancing:DescribeTargetHealth",
-                        "elasticloadbalancing:RegisterTargets"
+                        "elasticloadbalancing:RegisterTargets",
+                        "ecs:DescribeServices",
+                        "ecs:UpdateService"
                       ],
                     "Resource": "*"
                   }
