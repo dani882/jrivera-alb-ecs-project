@@ -8,7 +8,7 @@ Parameters:
   InstanceType:
     Description: Which instance type should we use to build the ECS cluster?
     Type: String
-    Default: t2.large
+    Default: t2.micro
   VPC:
     Description: Choose which VPC this ECS cluster should be deployed to
     Type: 'AWS::EC2::VPC::Id'
@@ -33,30 +33,21 @@ Resources:
           - '-cluster'
 
   ECSAutoScalingGroup:
-    DependsOn: 
-      - ECSCluster
+    DependsOn: ECSCluster
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier: !Ref Subnets
-      LaunchTemplate:
-        LaunchTemplateId: !Ref ECSLaunchTemplate
-        Version: !GetAtt ECSLaunchTemplate.LatestVersionNumber
+      LaunchConfigurationName: !Ref ECSLaunchConfiguration
       MinSize: 2
       MaxSize: 5
       DesiredCapacity: 2
-     # MixedInstancesPolicy:
-      #  
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} ECS host
           PropagateAtLaunch: true
-
-        - Key: Description
-          Value: "This instance is the part of the Auto Scaling group"
-          PropagateAtLaunch: true
-    #CreationPolicy:
-    #  ResourceSignal:
-    #    Timeout: PT15M
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: 1
@@ -70,34 +61,26 @@ Resources:
           - ScheduledActions
         WaitOnResourceSignals: true
   
-  ECSLaunchTemplate:
-    Type: AWS::EC2::LaunchTemplate
+  ECSLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      LaunchTemplateName: !Join 
-        - ''
-        - - !Ref EnvironmentName
-          - '-template'
-      LaunchTemplateData:
-        IamInstanceProfile:
-          Arn: !GetAtt ECSInstanceProfile.Arn
-        ImageId: !Ref ECSAMI
-        InstanceType: !Ref InstanceType
-        Monitoring:
-          Enabled: true
-      #  NetworkInterfaces:
-      #    - AssociatePublicIpAddress: true
-      #      DeleteOnTermination: true
-        SecurityGroupIds:
-          - !Ref SecurityGroup
-        UserData:
-         "Fn::Base64": !Sub |
-           #!/bin/bash
-           yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
-           yum install -y https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
-           yum install -y aws-cfn-bootstrap hibagent 
-           /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchTemplate
-           /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
-           /usr/bin/enable-ec2-spot-hibernation
+      AssociatePublicIpAddress: true
+      ImageId: !Ref ECSAMI
+      InstanceType: !Ref InstanceType
+      SpotPrice: 0.0832 # To launch Spot Instances using spot fleet feature
+      SecurityGroups:
+        - !Ref SecurityGroup
+      IamInstanceProfile: !Ref ECSInstanceProfile
+      UserData:
+        "Fn::Base64": !Sub |
+          #!/bin/bash
+          yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+          yum install -y https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+          yum install -y aws-cfn-bootstrap hibagent 
+          /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
+          /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
+          /usr/bin/enable-ec2-spot-hibernation
+
     Metadata:
       AWS::CloudFormation::Init:
         config:
@@ -124,8 +107,8 @@ Resources:
               content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
-                path=Resources.ECSLaunchTemplate.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchTemplate
+                path=Resources.ECSLaunchConfiguration.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchConfiguration
 
           services:
             sysvinit:
@@ -135,24 +118,6 @@ Resources:
                 files:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
-
-  # Mixed on-demand and spot instances
-  EcsSpotFleet:
-    Type: 'AWS::EC2::SpotFleet'
-    Properties:
-      SpotFleetRequestConfigData:
-        AllocationStrategy: lowestPrice
-        IamFleetRole: !GetAtt ECSRole.Arn
-        TargetCapacity: 5
-        TerminateInstancesWithExpiration: true
-        Type: maintain
-        LaunchTemplateConfigs:
-          - LaunchTemplateSpecification:
-              LaunchTemplateId: !Ref ECSLaunchTemplate
-              Version: !GetAtt ECSLaunchTemplate.LatestVersionNumber
-            Overrides:
-              - InstanceType: t3.large
-                WeightedCapacity: 1
 
   # This IAM Role is attached to all of the ECS hosts. It is based on the default role
   # published here:
@@ -173,12 +138,11 @@ Resources:
                 "Action": "sts:AssumeRole",
                 "Effect": "Allow",
                 "Principal": {
-                    "Service": [ "ecs.amazonaws.com","spotfleet.amazonaws.com"]
+                    "Service": "ec2.amazonaws.com"
                 }
             }]
         }
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole'
         - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
         - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
         - >-
@@ -194,7 +158,6 @@ Resources:
                         "ecs:CreateCluster",
                         "ecs:DeregisterContainerInstance",
                         "ecs:DiscoverPollEndpoint",
-                        "ecs:UpdateContainerInstancesState",
                         "ecs:Poll",
                         "ecs:RegisterContainerInstance",
                         "ecs:StartTelemetrySession",

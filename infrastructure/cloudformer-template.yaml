@@ -1,0 +1,326 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  vpc35180c5d:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 172.31.0.0/16
+      InstanceTenancy: default
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+  vpc0f3267e2ca2577b59:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.10.10.0/24
+      InstanceTenancy: default
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Name
+          Value: CloudformerVPC
+  vpc0cbe0b457eb3458f6:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      InstanceTenancy: default
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+  subnet002fba869b600c9aa:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock: 10.10.10.0/24
+      AvailabilityZone: us-east-2a
+      VpcId: !Ref vpc0f3267e2ca2577b59
+  subnet080444f252bbf4755:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: us-east-2a
+      VpcId: !Ref vpc0cbe0b457eb3458f6
+  subnet0c50f426550db4903:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: us-east-2b
+      VpcId: !Ref vpc0cbe0b457eb3458f6
+  igw001c097c030a6f315:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties: {}
+  igw0d222aedf11d1adc6:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties: {}
+  dopt985eb0f3:
+    Type: 'AWS::EC2::DHCPOptions'
+    Properties:
+      DomainName: us-east-2.compute.internal
+      DomainNameServers:
+        - AmazonProvidedDNS
+  acladc437c6:
+    Type: 'AWS::EC2::NetworkAcl'
+    Properties:
+      VpcId: !Ref vpc35180c5d
+  acl0295326e6ec4f440c:
+    Type: 'AWS::EC2::NetworkAcl'
+    Properties:
+      VpcId: !Ref vpc0cbe0b457eb3458f6
+  acl05aaa5cc99dcd0c3c:
+    Type: 'AWS::EC2::NetworkAcl'
+    Properties:
+      VpcId: !Ref vpc0f3267e2ca2577b59
+  rtb04eabc69c9578bada:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref vpc0f3267e2ca2577b59
+  rtb065eed674bd29b9bc:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref vpc0f3267e2ca2577b59
+      Tags:
+        - Key: Name
+          Value: CloudformerVPCRouteTable
+  rtbc227faa9:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref vpc35180c5d
+  rtb073ef25784d9bb6f7:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref vpc0cbe0b457eb3458f6
+  rtb036447a9cdb4d5ffd:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref vpc0cbe0b457eb3458f6
+  sgEC2ContainerServiceclusterEcsSecurityGroup1XH9OSFJDQ7ZY:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: ECS Allowed Ports
+      VpcId: !Ref vpc0cbe0b457eb3458f6
+  sgSGforALB:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: SG-forALB
+      VpcId: !Ref vpc0cbe0b457eb3458f6
+  sgdefault:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: default VPC security group
+      VpcId: !Ref vpc35180c5d
+  sgjriveracloudformerstacksWebServerSecurityGroupIKNBJABGR684:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable HTTPS access via port 443
+      VpcId: !Ref vpc0f3267e2ca2577b59
+  dbsgdefault:
+    Type: 'AWS::RDS::DBSecurityGroup'
+    Properties:
+      GroupDescription: default
+  alarmScaleInAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      ActionsEnabled: 'true'
+      ComparisonOperator: LessThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Period: '900'
+      Statistic: Minimum
+      Threshold: '40.0'
+      Unit: Percent
+      AlarmActions:
+        - >-
+          arn:aws:autoscaling:us-east-2:448067628045:scalingPolicy:6fdc3902-0b55-4307-8234-8812fdcbceb9:resource/ecs/service/cluster/jrivera-service-https:policyName/ScaleInPolicy
+      Dimensions:
+        - Name: ClusterName
+          Value: jrivera-project-cluster
+        - Name: ServiceName
+          Value: jrivera-project-service
+  alarmScaleOutAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      ActionsEnabled: 'true'
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: '1'
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Period: '60'
+      Statistic: Maximum
+      Threshold: '75.0'
+      Unit: Percent
+      AlarmActions:
+        - >-
+          arn:aws:autoscaling:us-east-2:448067628045:scalingPolicy:6fdc3902-0b55-4307-8234-8812fdcbceb9:resource/ecs/service/cluster/jrivera-service-https:policyName/ScaleOutPolicy
+      Dimensions:
+        - Name: ClusterName
+          Value: jrivera-project-cluster
+        - Name: ServiceName
+          Value: jrivera-project-service
+  acl1:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Egress: 'true'
+      Protocol: '-1'
+      RuleAction: allow
+      RuleNumber: '100'
+      NetworkAclId: !Ref acl0295326e6ec4f440c
+  acl2:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Protocol: '-1'
+      RuleAction: allow
+      RuleNumber: '100'
+      NetworkAclId: !Ref acl0295326e6ec4f440c
+  acl3:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Egress: 'true'
+      Protocol: '-1'
+      RuleAction: allow
+      RuleNumber: '100'
+      NetworkAclId: !Ref acl05aaa5cc99dcd0c3c
+  acl4:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Protocol: '-1'
+      RuleAction: allow
+      RuleNumber: '100'
+      NetworkAclId: !Ref acl05aaa5cc99dcd0c3c
+  subnetacl1:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      NetworkAclId: !Ref acl0295326e6ec4f440c
+      SubnetId: !Ref subnet0c50f426550db4903
+  subnetacl2:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      NetworkAclId: !Ref acl0295326e6ec4f440c
+      SubnetId: !Ref subnet080444f252bbf4755
+  subnetacl3:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      NetworkAclId: !Ref acl05aaa5cc99dcd0c3c
+      SubnetId: !Ref subnet002fba869b600c9aa
+  gw1:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref vpc0f3267e2ca2577b59
+      InternetGatewayId: !Ref igw001c097c030a6f315
+  gw2:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref vpc0cbe0b457eb3458f6
+      InternetGatewayId: !Ref igw0d222aedf11d1adc6
+  subnetroute2:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref rtb065eed674bd29b9bc
+      SubnetId: !Ref subnet002fba869b600c9aa
+  subnetroute4:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref rtb073ef25784d9bb6f7
+      SubnetId: !Ref subnet080444f252bbf4755
+  subnetroute5:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref rtb073ef25784d9bb6f7
+      SubnetId: !Ref subnet0c50f426550db4903
+  route1:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref rtb065eed674bd29b9bc
+      GatewayId: !Ref igw001c097c030a6f315
+    DependsOn: gw1
+  route2:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref rtb073ef25784d9bb6f7
+      GatewayId: !Ref igw0d222aedf11d1adc6
+    DependsOn: gw2
+  dchpassoc1:
+    Type: 'AWS::EC2::VPCDHCPOptionsAssociation'
+    Properties:
+      VpcId: !Ref vpc35180c5d
+      DhcpOptionsId: !Ref dopt985eb0f3
+  dchpassoc2:
+    Type: 'AWS::EC2::VPCDHCPOptionsAssociation'
+    Properties:
+      VpcId: !Ref vpc0f3267e2ca2577b59
+      DhcpOptionsId: !Ref dopt985eb0f3
+  dchpassoc3:
+    Type: 'AWS::EC2::VPCDHCPOptionsAssociation'
+    Properties:
+      VpcId: !Ref vpc0cbe0b457eb3458f6
+      DhcpOptionsId: !Ref dopt985eb0f3
+  ingress1:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref sgEC2ContainerServiceclusterEcsSecurityGroup1XH9OSFJDQ7ZY
+      IpProtocol: tcp
+      FromPort: '32768'
+      ToPort: '65535'
+      SourceSecurityGroupId: !Ref sgSGforALB
+      SourceSecurityGroupOwnerId: '448067628045'
+  ingress2:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref 21q
+      IpProtocol: '-1'
+      CidrIp: 0.0.0.0/0
+  ingress3:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref sgdefault
+      IpProtocol: '-1'
+      SourceSecurityGroupId: !Ref sgdefault
+      SourceSecurityGroupOwnerId: '448067628045'
+  ingress4:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref sgjriveracloudformerstacksWebServerSecurityGroupIKNBJABGR684
+      IpProtocol: tcp
+      FromPort: '443'
+      ToPort: '443'
+      CidrIp: 0.0.0.0/0
+  ingress5:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref sgdefault
+      IpProtocol: '-1'
+      SourceSecurityGroupId: !Ref sgdefault
+      SourceSecurityGroupOwnerId: '448067628045'
+  egress1:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref sgEC2ContainerServiceclusterEcsSecurityGroup1XH9OSFJDQ7ZY
+      IpProtocol: '-1'
+      CidrIp: 0.0.0.0/0
+  egress2:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref sgSGforALB
+      IpProtocol: '-1'
+      CidrIp: 0.0.0.0/0
+  egress3:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref sgdefault
+      IpProtocol: '-1'
+      CidrIp: 0.0.0.0/0
+  egress4:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref sgjriveracloudformerstacksWebServerSecurityGroupIKNBJABGR684
+      IpProtocol: '-1'
+      CidrIp: 0.0.0.0/0
+  egress5:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref sgdefault
+      IpProtocol: '-1'
+      CidrIp: 0.0.0.0/0
+Description: ''
