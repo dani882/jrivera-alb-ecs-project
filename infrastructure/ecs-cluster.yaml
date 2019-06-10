@@ -8,7 +8,7 @@ Parameters:
   InstanceType:
     Description: Which instance type should we use to build the ECS cluster?
     Type: String
-    Default: t2.micro
+    Default: t3.large
   VPC:
     Description: Choose which VPC this ECS cluster should be deployed to
     Type: 'AWS::EC2::VPC::Id'
@@ -21,7 +21,7 @@ Parameters:
   ECSAMI:
     Description: ECS-Optimized AMI ID
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
 
 Resources:
   ECSCluster:
