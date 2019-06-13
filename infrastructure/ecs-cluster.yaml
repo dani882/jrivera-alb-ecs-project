@@ -204,11 +204,7 @@ Resources:
                         "ecr:BatchCheckLayerAvailability",
                         "ecr:BatchGetImage",
                         "ecr:GetDownloadUrlForLayer",
-                        "ecr:GetAuthorizationToken",
-                        "ssm:GetParameters",
-                        "ssm:GetParameter",
-                        "ssm:GetParametersByPath"
-                    ],
+                        "ecr:GetAuthorizationToken"                    ],
                     "Resource": "*"
                 }]
             }
