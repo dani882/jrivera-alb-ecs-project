@@ -1,6 +1,6 @@
-    
 Description: >
   This template contains the security groups required by our entire stack.
+
 Parameters:
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names
@@ -24,7 +24,6 @@ Resources:
           IpProtocol: TCP
           FromPort: 32768
           ToPort: 65535
-
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-ECS-Hosts
@@ -36,11 +35,9 @@ Resources:
       VpcId: !Ref VPC
       GroupDescription: Access to the load balancer that sits in front of ECS
       SecurityGroupIngress:
-        # Allow http access to our ECS services
+        # Allow http/https access to our ECS services
         - CidrIp: 0.0.0.0/0
           IpProtocol: -1
-       #   FromPort: 80
-       #   ToPort: 80
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-LoadBalancers

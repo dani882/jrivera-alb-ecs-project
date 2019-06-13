@@ -1,10 +1,11 @@
 Description: >
   This template deploys an Application Load Balancer that exposes our various ECS services.
+
 Parameters:
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names
     Type: String
-    
+
   VPC:
     Type: AWS::EC2::VPC::Id
     Description: Choose which VPC the Application Load Balancer should be deployed to
@@ -39,7 +40,7 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref DefaultTargetGroup
 
-  # HTTPS Listener 
+  # HTTPS Listener
   HTTPSLoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -75,6 +76,35 @@ Resources:
       Port: 443
       Protocol: HTTPS
 
+  LoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !Ref VPC
+      Port: 80
+      Protocol: HTTP
+      Matcher:
+        HttpCode: 200-299
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+
+  #HTTPS Target Group
+  LoadBalancerHTTPSTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !Ref VPC
+      Port: 443
+      Protocol: HTTPS
+      Matcher:
+        HttpCode: 200-299
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /alb-status
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+
 Outputs:
   LoadBalancer:
     Description: A reference to the Application Load Balancer
@@ -91,3 +121,11 @@ Outputs:
   HTTPSListener:
     Description: A reference to a port 443 listener
     Value: !Ref HTTPSLoadBalancerListener
+
+  TargetGroup:
+    Description: HTTP Target group
+    Value: !Ref LoadBalancerTargetGroup
+
+  HTTPSTargetGroup:
+    Description: HTTP Target group
+    Value: !Ref LoadBalancerHTTPSTargetGroup
