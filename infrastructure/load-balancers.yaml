@@ -38,7 +38,7 @@ Resources:
       Protocol: HTTP
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref DefaultTargetGroup
+          TargetGroupArn: !Ref LoadBalancerTargetGroup
 
   # HTTPS Listener
   HTTPSLoadBalancerListener:
@@ -55,30 +55,13 @@ Resources:
             - !Join ["/", ["server-certificate", "dummycert" ]]
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref HTTPSDefaultTargetGroup
+          TargetGroupArn: !Ref LoadBalancerHTTPSTargetGroup
 
-  # We define a default target group here, as this is a mandatory Parameters
-  # when creating an Application Load Balancer Listener.
-  DefaultTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub ${EnvironmentName}-TGforALB
-      VpcId: !Ref VPC
-      Port: 80
-      Protocol: HTTP
-
-  # HTTPS Default Target Group for ALB
-  HTTPSDefaultTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub ${EnvironmentName}-HTTPSTGforALB
-      VpcId: !Ref VPC
-      Port: 443
-      Protocol: HTTPS
-
+  # Target Groups for Load Balancer Listeners
   LoadBalancerTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name: !Sub ${EnvironmentName}-TGforALB
       VpcId: !Ref VPC
       Port: 80
       Protocol: HTTP
@@ -94,6 +77,7 @@ Resources:
   LoadBalancerHTTPSTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name: !Sub ${EnvironmentName}-HTTPS-TGforALB
       VpcId: !Ref VPC
       Port: 443
       Protocol: HTTPS

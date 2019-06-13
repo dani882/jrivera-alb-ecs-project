@@ -22,7 +22,6 @@ Parameters:
     Description: The OpenResty URL from ECR
     Type: String
     AllowedPattern: ".+"
-
   PHPImageURL:
     Description: The PHP URL from ECR
     Type: String
