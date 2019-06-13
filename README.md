@@ -67,7 +67,7 @@ First step we need to do is create Two repositories and a SSL Certificate that a
 
 Now that ECR Repos and SSL Certificate are create you can launch this CloudFormation stack in your account to provision the infrastructure:
 
- [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=trial-project&templateURL=https://jrivera-cf-templates.s3.amazonaws.com/master.yaml)
+ [![cloudformation-launch-button](images/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=trial-project&templateURL=https://jrivera-cf-templates-codecommit.s3.us-east-2.amazonaws.com/master.yaml)
 
 
 - In the parameter section, paste the url from prepenv script and continue.
