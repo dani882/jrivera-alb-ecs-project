@@ -46,8 +46,8 @@ This set of templates deploys the following network design:
 | Item | CIDR | Description |
 | --- | --- | --- |
 | VPC | 10.0.0.0/16 | The whole range used for the VPC and all subnets |
-| Public Subnet | 10.0.0.0/24 | The public subnet in the first Availability Zone |
-| Public Subnet | 10.0.1.0/24 | The public subnet in the second Availability Zone |
+| Public Subnet 1 | 10.0.0.0/24 | The public subnet in the first Availability Zone |
+| Public Subnet 2 | 10.0.1.0/24 | The public subnet in the second Availability Zone |
 
 ## Provisioning infrastructure
 

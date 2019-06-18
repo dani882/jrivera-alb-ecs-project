@@ -64,7 +64,7 @@ Resources:
       Cluster: !Ref Cluster
       Role: !Ref ServiceRole
       DesiredCount: !Ref DesiredCount
-      TaskDefinition: !Ref TaskDefinition
+      TaskDefinition: !Ref HTTPSTaskDefinition
       LoadBalancers:
         - ContainerName: web
           ContainerPort: 443
@@ -85,7 +85,46 @@ Resources:
             Options:
               awslogs-group: !Ref CloudWatchLogsGroup
               awslogs-region: !Ref AWS::Region
+        MountPoints:
+        - ContainerPath: /var/www/html
+          SourceVolume: ServicesNginxSrc
+      # Openresty Image
+      - Name: web
+        Essential: true
+        Image: !Ref OpenRestyImage
+        Memory: 256
+        MountPoints:
+        - ContainerPath: /var/www/html
+          SourceVolume: ServicesNginxSrc
+        PortMappings:
+          - ContainerPort: 80
+            HostPort: 80
+        LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-region: !Ref AWS::Region
+        Links:
+          - php-fpm
+      Volumes:
+        - Name: ServicesNginxSrc
 
+  # Task definition for HTTPS Service
+  HTTPSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Join ['', [!Ref 'AWS::StackName', https-td]]
+      ContainerDefinitions:
+      # PHP Image
+      - Name: php-fpm
+        Essential: true
+        Image: !Ref PHPImage
+        Memory: 256
+        LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-region: !Ref AWS::Region
         MountPoints:
         - ContainerPath: /var/www/html
           SourceVolume: ServicesNginxSrc
@@ -99,11 +138,8 @@ Resources:
         - ContainerPath: /var/www/html
           SourceVolume: ServicesNginxSrc
         PortMappings:
-          - ContainerPort: 80
-            HostPort: 0
           - ContainerPort: 443
-            HostPort: 0
-
+            HostPort: 443
         LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -118,7 +154,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Ref AWS::StackName
-      RetentionInDays: 365
+      RetentionInDays: 5
 
   ListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -205,42 +241,12 @@ Resources:
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
 
-  #HTTPS Service Scalable Target
-  HTTPSServiceScalableTarget:
-    Type: 'AWS::ApplicationAutoScaling::ScalableTarget'
-    Properties:
-      MaxCapacity: !Ref MaxCount
-      MinCapacity: !Ref DesiredCount
-      ResourceId: !Join
-        - /
-        - - service
-          - !Ref Cluster
-          - !GetAtt HTTPSService.Name
-      RoleARN: !Ref ECSServiceAutoScalingRoleARN
-      ScalableDimension: ecs:service:DesiredCount
-      ServiceNamespace: ecs
-
   ServiceScaleOutPolicy:
     Type: "AWS::ApplicationAutoScaling::ScalingPolicy"
     Properties:
       PolicyName: ServiceScaleOutPolicy
       PolicyType: StepScaling
       ScalingTargetId: !Ref ServiceScalableTarget
-      StepScalingPolicyConfiguration:
-        AdjustmentType: ChangeInCapacity
-        Cooldown: 60
-        MetricAggregationType: Average
-        StepAdjustments:
-          - MetricIntervalLowerBound: 0
-            ScalingAdjustment: 1
-
-  #HTTPS Service ScaleOut Policy
-  HTTPSServiceScaleOutPolicy:
-    Type: "AWS::ApplicationAutoScaling::ScalingPolicy"
-    Properties:
-      PolicyName: HTTPSServiceScaleOutPolicy
-      PolicyType: StepScaling
-      ScalingTargetId: !Ref HTTPSServiceScalableTarget
       StepScalingPolicyConfiguration:
         AdjustmentType: ChangeInCapacity
         Cooldown: 60
@@ -263,6 +269,85 @@ Resources:
           - MetricIntervalUpperBound: 0
             ScalingAdjustment: -1
 
+  CPUScaleOutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: CPU utilization greater than 75%
+      AlarmDescription: Alarm if cpu utilization greater than 75% of reserved cpu
+      Namespace: AWS/ECS
+      MetricName: CPUUtilization
+      Unit: Percent
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref Cluster
+        - Name: ServiceName
+          Value: !GetAtt Service.Name
+      Statistic: Maximum
+      Period: "60"
+      EvaluationPeriods: "1"
+      Threshold: "75"
+      ComparisonOperator: GreaterThanThreshold
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref ServiceScaleOutPolicy
+
+  CPUScaleInAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: CPU utilization less than 40%
+      AlarmDescription: Alarm if cpu utilization less than 40% of reserved cpu
+      Namespace: AWS/ECS
+      MetricName: CPUUtilization
+      Unit: Percent
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref Cluster
+        - Name: ServiceName
+          Value: !GetAtt Service.Name
+      Statistic: Maximum
+      # 20 minutes
+      Period: "1200"
+      EvaluationPeriods: "1"
+      Threshold: "40"
+      ComparisonOperator: LessThanThreshold
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref ServiceScaleInPolicy
+
+########################################
+##############HTTPS#####################
+########################################
+
+  #HTTPS Service Scalable Target
+  HTTPSServiceScalableTarget:
+    Type: 'AWS::ApplicationAutoScaling::ScalableTarget'
+    Properties:
+      MaxCapacity: !Ref MaxCount
+      MinCapacity: !Ref DesiredCount
+      ResourceId: !Join
+        - /
+        - - service
+          - !Ref Cluster
+          - !GetAtt HTTPSService.Name
+      RoleARN: !Ref ECSServiceAutoScalingRoleARN
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  #HTTPS Service ScaleOut Policy
+  HTTPSServiceScaleOutPolicy:
+    Type: "AWS::ApplicationAutoScaling::ScalingPolicy"
+    Properties:
+      PolicyName: HTTPSServiceScaleOutPolicy
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref HTTPSServiceScalableTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+          - MetricIntervalLowerBound: 0
+            ScalingAdjustment: 1
+
   #HTTPS Service ScaleIn Policy
   HTTPSServiceScaleInPolicy:
     Type: "AWS::ApplicationAutoScaling::ScalingPolicy"
@@ -278,10 +363,10 @@ Resources:
           - MetricIntervalUpperBound: 0
             ScalingAdjustment: -1
 
-  CPUScaleOutAlarm:
+  HTTPSCPUScaleOutAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: CPU utilization greater than 75%
+      AlarmName: CPU utilization greater than 75% in HTTPS Service
       AlarmDescription: Alarm if cpu utilization greater than 75% of reserved cpu
       Namespace: AWS/ECS
       MetricName: CPUUtilization
@@ -289,8 +374,6 @@ Resources:
       Dimensions:
         - Name: ClusterName
           Value: !Ref Cluster
-        - Name: ServiceName
-          Value: !GetAtt Service.Name
         - Name: HTTPSServiceName
           Value: !GetAtt HTTPSService.Name
       Statistic: Maximum
@@ -300,13 +383,12 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       ActionsEnabled: true
       AlarmActions:
-        - !Ref ServiceScaleOutPolicy
         - !Ref HTTPSServiceScaleOutPolicy
 
-  CPUScaleInAlarm:
+  HTTPSCPUScaleInAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: CPU utilization less than 40%
+      AlarmName: CPU utilization less than 40% in HTTPS Service
       AlarmDescription: Alarm if cpu utilization less than 40% of reserved cpu
       Namespace: AWS/ECS
       MetricName: CPUUtilization
@@ -314,8 +396,6 @@ Resources:
       Dimensions:
         - Name: ClusterName
           Value: !Ref Cluster
-        - Name: ServiceName
-          Value: !GetAtt Service.Name
         - Name: HTTPSServiceName
           Value: !GetAtt HTTPSService.Name
       Statistic: Maximum
@@ -326,5 +406,4 @@ Resources:
       ComparisonOperator: LessThanThreshold
       ActionsEnabled: true
       AlarmActions:
-        - !Ref ServiceScaleInPolicy
         - !Ref HTTPSServiceScaleInPolicy

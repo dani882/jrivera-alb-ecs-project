@@ -12,7 +12,6 @@ Parameters:
 
 Resources:
   # This security group defines who/where is allowed to access the ECS hosts directly.
-  # By default we're just allowing access from the load balancer.
   ECSHostSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -22,8 +21,18 @@ Resources:
         # Only allow inbound access to ECS from the ELB
         - SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
           IpProtocol: TCP
-          FromPort: 32768
-          ToPort: 65535
+          FromPort: 80
+          ToPort: 80
+        - SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+          IpProtocol: TCP
+          FromPort: 443
+          ToPort: 443
+        # Allow SSH access to ECS instances from everywhere
+        - CidrIp: 0.0.0.0/0
+          Description: "Allow SSH access to ECS Instances"
+          IpProtocol: TCP
+          FromPort: 22
+          ToPort: 22
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-ECS-Hosts

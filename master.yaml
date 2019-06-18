@@ -15,9 +15,9 @@ Description: >
   Modified-by: Jesus Rivera <dani882@gmail.com>
 
 Parameters:
-  # KeyPair:
-  #   Description: Amazon EC2 Key Pair for SSH Access
-  #   Type: "AWS::EC2::KeyPair::KeyName"
+  KeyPair:
+    Description: Amazon EC2 Key Pair for SSH Access
+    Type: "AWS::EC2::KeyPair::KeyName"
   OpenRestyImageURL:
     Description: The OpenResty URL from ECR
     Type: String
@@ -65,7 +65,7 @@ Resources:
         InstanceType: t3.large
         VPC: !GetAtt VPC.Outputs.VPC
         SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSHostSecurityGroup
-      #  KeyPairName: !Ref KeyPair
+        KeyPairName: !Ref KeyPair
         Subnets: !GetAtt VPC.Outputs.PublicSubnets
         TargetGroup: !GetAtt ALB.Outputs.TargetGroup
         HTTPSTargetGroup: !GetAtt ALB.Outputs.HTTPSTargetGroup

@@ -28,9 +28,9 @@ Parameters:
   HTTPSTargetGroup:
     Description: HTTPS Target group
     Type: String
-  # KeyPairName:
-  #   Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
-  #   Type: String
+  KeyPairName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
+    Type: String
 
 Resources:
   ECSCluster:
@@ -72,7 +72,6 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName} ECS host
           PropagateAtLaunch: true
-
         - Key: Description
           Value: "This instance is the part of the Auto Scaling group"
           PropagateAtLaunch: true
@@ -103,7 +102,7 @@ Resources:
         IamInstanceProfile:
           Arn: !GetAtt ECSInstanceProfile.Arn
         ImageId: !Ref ECSAMI
-      #  KeyName: !Ref KeyPairName
+        KeyName: !Ref KeyPairName
         InstanceType: !Ref InstanceType
         Monitoring:
           Enabled: true
