@@ -25,7 +25,7 @@ Parameters:
     Description: HTTP Target group
     Type: String
   HTTPSTargetGroup:
-    Description: HTTP Target group
+    Description: HTTPS Target group
     Type: String
   Path:
     Description: The path to register with the Application Load Balancer

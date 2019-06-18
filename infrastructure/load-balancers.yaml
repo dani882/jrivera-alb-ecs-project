@@ -111,5 +111,5 @@ Outputs:
     Value: !Ref LoadBalancerTargetGroup
 
   HTTPSTargetGroup:
-    Description: HTTP Target group
+    Description: HTTPS Target group
     Value: !Ref LoadBalancerHTTPSTargetGroup

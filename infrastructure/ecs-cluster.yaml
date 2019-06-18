@@ -26,7 +26,7 @@ Parameters:
     Description: HTTP Target group
     Type: String
   HTTPSTargetGroup:
-    Description: HTTP Target group
+    Description: HTTPS Target group
     Type: String
   # KeyPairName:
   #   Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
@@ -156,6 +156,67 @@ Resources:
                 files:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+
+  # Increments the number of EC2 instances in the group by 1 when the policy is executed.
+  InstanceScaleOutPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: "ChangeInCapacity"
+      AutoScalingGroupName: !Ref ECSAutoScalingGroup
+      Cooldown: "60"
+      ScalingAdjustment: 1
+
+  InstanceCPUScaleOutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: Instance CPU utilization greater than 75%
+      AlarmDescription: Alarm if cpu utilization greater than 75% of reserved cpu
+      Namespace: AWS/EC2
+      MetricName: Instance CPUUtilization
+      Unit: Percent
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref ECSAutoScalingGroup
+      Statistic: Maximum
+      Period: "60"
+      EvaluationPeriods: "1"
+      Threshold: "75"
+      ComparisonOperator: GreaterThanThreshold
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref InstanceScaleOutPolicy
+
+  # Decrements the number of EC2 instances in the group by 1 when the policy is executed.
+  InstanceScaleInPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref ECSAutoScalingGroup
+      Cooldown: "60"
+      ScalingAdjustment: -1
+
+  InstanceCPUScaleInAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: Instance CPU utilization less than 40%
+      AlarmDescription: Alarm if cpu utilization less than 40% of reserved cpu
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Unit: Percent
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref ECSAutoScalingGroup
+      Statistic: Maximum
+      # 20 minutes
+      Period: "1200"
+      EvaluationPeriods: "1"
+      Threshold: "40"
+      ComparisonOperator: LessThanThreshold
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref InstanceScaleInPolicy
+
+  # End of autoscaling policy
 
   # This IAM Role is attached to all of the ECS hosts. It is based on the default role
   # published here:
