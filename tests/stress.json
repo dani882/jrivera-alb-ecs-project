@@ -1,0 +1,17 @@
+{
+    "Targets": [
+        {
+            "Key": "tag:Name",
+            "Values": [
+                "Fn::Sub": "${EnvironmentName} ECS host"
+            ]
+        }
+    ],
+    "DocumentName": "AWS-RunShellScript",
+    "Comment": "CPU stress",
+    "Parameters": {
+        "commands": [
+            "stress-ng --matrix 0 -t 15m"
+        ]
+    }
+}

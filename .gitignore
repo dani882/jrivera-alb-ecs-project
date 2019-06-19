@@ -1,4 +1,3 @@
-tests/
 .env
 build/dummy.crt
 build/dummy.key
