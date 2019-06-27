@@ -10,7 +10,6 @@ Description: >
   Finally, it deploys a pair of example ECS services from containers published in
   Amazon EC2 Container Registry (Amazon ECR).
 
-  Last Modified: 22nd September 2016
   Author: Paul Maddox <pmaddox@amazon.com>
   Modified-by: Jesus Rivera <dani882@gmail.com>
 
@@ -67,21 +66,18 @@ Resources:
         SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSHostSecurityGroup
         KeyPairName: !Ref KeyPair
         Subnets: !GetAtt VPC.Outputs.PublicSubnets
-        TargetGroup: !GetAtt ALB.Outputs.TargetGroup
-        HTTPSTargetGroup: !GetAtt ALB.Outputs.HTTPSTargetGroup
 
   OpenRestyService:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://jrivera-cf-templates-codecommit.s3.us-east-2.amazonaws.com/services/service.yaml
       Parameters:
-        VPC: !GetAtt VPC.Outputs.VPC
         Cluster: !GetAtt ECS.Outputs.Cluster
         DesiredCount: 1
         Listener: !GetAtt ALB.Outputs.Listener
         HTTPSListener: !GetAtt ALB.Outputs.HTTPSListener
-        TargetGroup: !GetAtt ALB.Outputs.TargetGroup
-        HTTPSTargetGroup: !GetAtt ALB.Outputs.HTTPSTargetGroup
+        TargetGroup: !GetAtt ECS.Outputs.TargetGroup
+        HTTPSTargetGroup: !GetAtt ECS.Outputs.HTTPSTargetGroup
         Path: /
         ECSServiceAutoScalingRoleARN: !GetAtt ECS.Outputs.ECSServiceAutoScalingRole
         OpenRestyImage: !Ref OpenRestyImageURL

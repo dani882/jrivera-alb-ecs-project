@@ -38,7 +38,7 @@ Resources:
       Protocol: HTTP
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref LoadBalancerTargetGroup
+          TargetGroupArn: !Ref DefaultTargetGroup
 
   # HTTPS Listener
   HTTPSLoadBalancerListener:
@@ -55,39 +55,16 @@ Resources:
             - !Join ["/", ["server-certificate", "dummycert" ]]
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref LoadBalancerHTTPSTargetGroup
+          TargetGroupArn: !Ref DefaultTargetGroup
 
-  # Target Groups for Load Balancer Listeners
-  LoadBalancerTargetGroup:
+  # Dummy Target Group for Load Balancer Listener
+  DefaultTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub ${EnvironmentName}-TGforALB
+      Name: !Sub ${EnvironmentName}-default
       VpcId: !Ref VPC
       Port: 80
       Protocol: HTTP
-      Matcher:
-        HttpCode: 200-299
-      HealthCheckIntervalSeconds: 10
-      HealthCheckPath: /
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
-
-  #HTTPS Target Group
-  LoadBalancerHTTPSTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub ${EnvironmentName}-HTTPS-TGforALB
-      VpcId: !Ref VPC
-      Port: 443
-      Protocol: HTTPS
-      Matcher:
-        HttpCode: 200-299
-      HealthCheckIntervalSeconds: 10
-      HealthCheckPath: /alb-status
-      HealthCheckProtocol: HTTPS
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
 
 Outputs:
   LoadBalancer:
@@ -105,11 +82,3 @@ Outputs:
   HTTPSListener:
     Description: A reference to a port 443 listener
     Value: !Ref HTTPSLoadBalancerListener
-
-  TargetGroup:
-    Description: HTTP Target group
-    Value: !Ref LoadBalancerTargetGroup
-
-  HTTPSTargetGroup:
-    Description: HTTPS Target group
-    Value: !Ref LoadBalancerHTTPSTargetGroup

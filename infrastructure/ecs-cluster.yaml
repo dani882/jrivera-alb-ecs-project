@@ -22,12 +22,6 @@ Parameters:
     Description: ECS-Optimized AMI ID
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
-  TargetGroup:
-    Description: HTTP Target group
-    Type: String
-  HTTPSTargetGroup:
-    Description: HTTPS Target group
-    Type: String
   KeyPairName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
     Type: String
@@ -41,6 +35,49 @@ Resources:
         - - !Ref EnvironmentName
           - '-cluster'
 
+  LoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${EnvironmentName}-TGforALB
+      VpcId: !Ref VPC
+      Port: 80
+      Protocol: HTTP
+      Matcher:
+        HttpCode: 200-299
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 10
+      Tags:
+        - Key: ECSClusterName
+          Value: !Ref ECSCluster
+
+  #HTTPS Target Group
+  LoadBalancerHTTPSTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${EnvironmentName}-HTTPS-TGforALB
+      VpcId: !Ref VPC
+      Port: 443
+      Protocol: HTTPS
+      Matcher:
+        HttpCode: 200-299
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /alb-status
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 10
+      Tags:
+        - Key: ECSClusterName
+          Value: !Ref ECSCluster
+
   ECSAutoScalingGroup:
     DependsOn:
       - ECSCluster
@@ -53,7 +90,7 @@ Resources:
       MixedInstancesPolicy:
         InstancesDistribution:
           OnDemandBaseCapacity: 1
-          OnDemandPercentageAboveBaseCapacity: 0
+          OnDemandPercentageAboveBaseCapacity: 10
         LaunchTemplate:
           LaunchTemplateSpecification:
             LaunchTemplateId: !Ref ECSLaunchTemplate
@@ -66,11 +103,14 @@ Resources:
             - InstanceType: t3.large
       HealthCheckType: EC2
       TargetGroupARNs:
-        - !Ref TargetGroup
-        - !Ref HTTPSTargetGroup
+        - !Ref LoadBalancerTargetGroup
+        - !Ref LoadBalancerHTTPSTargetGroup
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} ECS host
+          PropagateAtLaunch: true
+        - Key: ECSClusterName
+          Value: !Ref ECSCluster
           PropagateAtLaunch: true
         - Key: Description
           Value: "This instance is the part of the Auto Scaling group"
@@ -113,7 +153,7 @@ Resources:
             #!/bin/bash -xe
             yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
             yum install -y https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
-            yum install -y aws-cfn-bootstrap hibagent stress-ng
+            yum install -y aws-cfn-bootstrap hibagent stress-ng jq
             /opt/aws/bin/cfn-init -v --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSLaunchTemplate
             /opt/aws/bin/cfn-signal -e $? --region ${AWS::Region} --stack ${AWS::StackName} --resource ECSAutoScalingGroup
             /usr/bin/enable-ec2-spot-hibernation
@@ -127,7 +167,9 @@ Resources:
           commands:
             01_add_instance_to_cluster:
               command: !Sub echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
-            02_enable_cloudwatch_agent:
+            02_enable_task_iam_role:
+              command: !Sub echo ECS_ENABLE_TASK_IAM_ROLE=true >> /etc/ecs/ecs.config
+            03_enable_cloudwatch_agent:
               command: !Sub /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${ECSCloudWatchParameter} -s
 
           files:
@@ -171,8 +213,7 @@ Resources:
       AlarmName: Instance CPU utilization greater than 75%
       AlarmDescription: Alarm if cpu utilization greater than 75% of reserved cpu
       Namespace: AWS/EC2
-      MetricName: Instance CPUUtilization
-      Unit: Percent
+      MetricName: CPUUtilization
       Dimensions:
         - Name: AutoScalingGroupName
           Value: !Ref ECSAutoScalingGroup
@@ -201,7 +242,6 @@ Resources:
       AlarmDescription: Alarm if cpu utilization less than 40% of reserved cpu
       Namespace: AWS/EC2
       MetricName: CPUUtilization
-      Unit: Percent
       Dimensions:
         - Name: AutoScalingGroupName
           Value: !Ref ECSAutoScalingGroup
@@ -264,7 +304,7 @@ Resources:
                         "ecr:BatchCheckLayerAvailability",
                         "ecr:BatchGetImage",
                         "ecr:GetDownloadUrlForLayer",
-                        "ecr:GetAuthorizationToken"                    ],
+                        "ecr:GetAuthorizationToken"],
                     "Resource": "*"
                 }]
             }
@@ -396,3 +436,9 @@ Outputs:
   ECSAutoScalingGroupName:
     Description: A reference to ECS AutoScaling Group Name
     Value: !Ref ECSAutoScalingGroup
+  TargetGroup:
+    Description: HTTP Target group
+    Value: !Ref LoadBalancerTargetGroup
+  HTTPSTargetGroup:
+    Description: HTTPS Target group
+    Value: !Ref LoadBalancerHTTPSTargetGroup

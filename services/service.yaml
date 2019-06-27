@@ -1,9 +1,6 @@
 Description: >
   A project to show php information using phpinfo() function
 Parameters:
-  VPC:
-    Description: The VPC that the ECS cluster is deployed to
-    Type: AWS::EC2::VPC::Id
   Cluster:
     Description: Please provide the ECS Cluster ID that this service should run on
     Type: String
@@ -11,21 +8,17 @@ Parameters:
     Description: How many instances of this task should we run across our cluster?
     Type: Number
     Default: 1
-  MaxCount:
-    Description: Maximum number of instances of this task we can run across our cluster
-    Type: Number
-    Default: 5
   Listener:
     Description: The Application Load Balancer listener to register with
     Type: String
   HTTPSListener:
-    Description: The Application Load Balancer listener to register with
+    Description: The Application Load Balancer HTTPS listener to register with
     Type: String
   TargetGroup:
-    Description: HTTP Target group
+    Description: HTTP Target group for Load Balancer
     Type: String
   HTTPSTargetGroup:
-    Description: HTTPS Target group
+    Description: HTTPS Target group for Load Balancer
     Type: String
   Path:
     Description: The path to register with the Application Load Balancer
@@ -51,6 +44,11 @@ Resources:
       Role: !Ref ServiceRole
       DesiredCount: !Ref DesiredCount
       TaskDefinition: !Ref TaskDefinition
+      DeploymentConfiguration:
+        MaximumPercent: 150
+        MinimumHealthyPercent: 100
+      PlacementConstraints:
+        - Type: distinctInstance
       LoadBalancers:
         - ContainerName: web
           ContainerPort: 80
@@ -65,6 +63,11 @@ Resources:
       Role: !Ref ServiceRole
       DesiredCount: !Ref DesiredCount
       TaskDefinition: !Ref HTTPSTaskDefinition
+      DeploymentConfiguration:
+        MaximumPercent: 150
+        MinimumHealthyPercent: 100
+      PlacementConstraints:
+        - Type: distinctInstance
       LoadBalancers:
         - ContainerName: web
           ContainerPort: 443
@@ -74,6 +77,7 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Join ['', [!Ref 'AWS::StackName', -td]]
+      TaskRoleArn: !Ref TaskRole
       ContainerDefinitions:
       # PHP Image
       - Name: php-fpm
@@ -114,6 +118,7 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Join ['', [!Ref 'AWS::StackName', https-td]]
+      TaskRoleArn: !Ref TaskRole
       ContainerDefinitions:
       # PHP Image
       - Name: php-fpm
@@ -128,7 +133,6 @@ Resources:
         MountPoints:
         - ContainerPath: /var/www/html
           SourceVolume: ServicesNginxSrc
-
       # Openresty Image
       - Name: web
         Essential: true
@@ -154,7 +158,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Ref AWS::StackName
-      RetentionInDays: 5
+      RetentionInDays: 1
 
   ListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -227,11 +231,26 @@ Resources:
                 ]
             }
 
+
+  # Task Role
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument: |
+        {
+          "Statement": [{
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": { "Service": "ecs-tasks.amazonaws.com" }
+          }]
+        }
+
   ServiceScalableTarget:
     Type: 'AWS::ApplicationAutoScaling::ScalableTarget'
     Properties:
-      MaxCapacity: !Ref MaxCount
-      MinCapacity: !Ref DesiredCount
+      MaxCapacity: 5
+      MinCapacity: 5
       ResourceId: !Join
         - /
         - - service
@@ -276,7 +295,6 @@ Resources:
       AlarmDescription: Alarm if cpu utilization greater than 75% of reserved cpu
       Namespace: AWS/ECS
       MetricName: CPUUtilization
-      Unit: Percent
       Dimensions:
         - Name: ClusterName
           Value: !Ref Cluster
@@ -298,7 +316,6 @@ Resources:
       AlarmDescription: Alarm if cpu utilization less than 40% of reserved cpu
       Namespace: AWS/ECS
       MetricName: CPUUtilization
-      Unit: Percent
       Dimensions:
         - Name: ClusterName
           Value: !Ref Cluster
@@ -322,8 +339,8 @@ Resources:
   HTTPSServiceScalableTarget:
     Type: 'AWS::ApplicationAutoScaling::ScalableTarget'
     Properties:
-      MaxCapacity: !Ref MaxCount
-      MinCapacity: !Ref DesiredCount
+      MaxCapacity: 5
+      MinCapacity: 5
       ResourceId: !Join
         - /
         - - service
@@ -370,7 +387,6 @@ Resources:
       AlarmDescription: Alarm if cpu utilization greater than 75% of reserved cpu
       Namespace: AWS/ECS
       MetricName: CPUUtilization
-      Unit: Percent
       Dimensions:
         - Name: ClusterName
           Value: !Ref Cluster
@@ -392,7 +408,6 @@ Resources:
       AlarmDescription: Alarm if cpu utilization less than 40% of reserved cpu
       Namespace: AWS/ECS
       MetricName: CPUUtilization
-      Unit: Percent
       Dimensions:
         - Name: ClusterName
           Value: !Ref Cluster
