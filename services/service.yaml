@@ -44,11 +44,6 @@ Resources:
       Role: !Ref ServiceRole
       DesiredCount: !Ref DesiredCount
       TaskDefinition: !Ref TaskDefinition
-      DeploymentConfiguration:
-        MaximumPercent: 150
-        MinimumHealthyPercent: 100
-      PlacementConstraints:
-        - Type: distinctInstance
       LoadBalancers:
         - ContainerName: web
           ContainerPort: 80
@@ -63,11 +58,6 @@ Resources:
       Role: !Ref ServiceRole
       DesiredCount: !Ref DesiredCount
       TaskDefinition: !Ref HTTPSTaskDefinition
-      DeploymentConfiguration:
-        MaximumPercent: 150
-        MinimumHealthyPercent: 100
-      PlacementConstraints:
-        - Type: distinctInstance
       LoadBalancers:
         - ContainerName: web
           ContainerPort: 443
@@ -102,7 +92,6 @@ Resources:
           SourceVolume: ServicesNginxSrc
         PortMappings:
           - ContainerPort: 80
-            HostPort: 80
         LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -143,7 +132,6 @@ Resources:
           SourceVolume: ServicesNginxSrc
         PortMappings:
           - ContainerPort: 443
-            HostPort: 443
         LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -231,7 +219,6 @@ Resources:
                 ]
             }
 
-
   # Task Role
   TaskRole:
     Type: AWS::IAM::Role
@@ -250,7 +237,7 @@ Resources:
     Type: 'AWS::ApplicationAutoScaling::ScalableTarget'
     Properties:
       MaxCapacity: 5
-      MinCapacity: 5
+      MinCapacity: 2
       ResourceId: !Join
         - /
         - - service
@@ -340,7 +327,7 @@ Resources:
     Type: 'AWS::ApplicationAutoScaling::ScalableTarget'
     Properties:
       MaxCapacity: 5
-      MinCapacity: 5
+      MinCapacity: 2
       ResourceId: !Join
         - /
         - - service

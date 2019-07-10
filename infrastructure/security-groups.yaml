@@ -21,12 +21,8 @@ Resources:
         # Only allow inbound access to ECS from the ELB
         - SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
           IpProtocol: TCP
-          FromPort: 80
-          ToPort: 80
-        - SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
-          IpProtocol: TCP
-          FromPort: 443
-          ToPort: 443
+          FromPort: 32768
+          ToPort: 65535
         # Allow SSH access to ECS instances from everywhere
         - CidrIp: 0.0.0.0/0
           Description: "Allow SSH access to ECS Instances"

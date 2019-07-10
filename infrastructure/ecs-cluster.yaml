@@ -79,8 +79,7 @@ Resources:
           Value: !Ref ECSCluster
 
   ECSAutoScalingGroup:
-    DependsOn:
-      - ECSCluster
+    DependsOn: ECSCluster
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier: !Ref Subnets
@@ -102,9 +101,6 @@ Resources:
             - InstanceType: t3.medium
             - InstanceType: t3.large
       HealthCheckType: EC2
-      TargetGroupARNs:
-        - !Ref LoadBalancerTargetGroup
-        - !Ref LoadBalancerHTTPSTargetGroup
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} ECS host

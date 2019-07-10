@@ -1,4 +1,4 @@
-# Jesus Rivera's Trial project using with AWS CloudFormation, Amazon ECS, and an Application Load Balancer
+# A project demo using with AWS CloudFormation, Amazon ECS, and an Application Load Balancer
 
 
 ## Overview
